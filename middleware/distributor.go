@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -361,6 +362,16 @@ func getJSONStringValue(result gjson.Result, field string) (string, error) {
 	return result.String(), nil
 }
 
+// applyImageAutoModel 在图像端点上把非图像模型名统一改写为配置的图像模型，
+// 使客户端无需为出图单独切换模型（由环境变量 IMAGE_AUTO_MODEL 控制，未设置则不生效）。
+func applyImageAutoModel(model string) string {
+	autoModel := strings.TrimSpace(os.Getenv("IMAGE_AUTO_MODEL"))
+	if autoModel == "" || common.IsImageGenerationModel(model) {
+		return model
+	}
+	return autoModel
+}
+
 func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	var modelRequest ModelRequest
 	shouldSelectChannel := true
@@ -476,6 +487,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	}
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
 		modelRequest.Model = common.GetStringIfEmpty(modelRequest.Model, "dall-e")
+		modelRequest.Model = applyImageAutoModel(modelRequest.Model)
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/images/edits") {
 		//modelRequest.Model = common.GetStringIfEmpty(c.PostForm("model"), "gpt-image-1")
 		contentType := c.ContentType()
@@ -485,6 +497,8 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 				modelRequest.Model = req.Model
 			}
 		}
+		modelRequest.Model = common.GetStringIfEmpty(modelRequest.Model, "dall-e")
+		modelRequest.Model = applyImageAutoModel(modelRequest.Model)
 	}
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/audio") {
 		relayMode := relayconstant.RelayModeAudioSpeech
