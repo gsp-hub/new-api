@@ -50,6 +50,9 @@ func InitOptionMap() {
 	common.OptionMap["RegisterEnabled"] = strconv.FormatBool(common.RegisterEnabled)
 	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
 	common.OptionMap["AutomaticEnableChannelEnabled"] = strconv.FormatBool(common.AutomaticEnableChannelEnabled)
+	common.OptionMap["EmptyResponseGuardEnabled"] = strconv.FormatBool(operation_setting.EmptyResponseGuardEnabled)
+	common.OptionMap["EmptyResponseDisableThreshold"] = strconv.Itoa(operation_setting.EmptyResponseDisableThreshold)
+	common.OptionMap["EmptyResponseWindowSeconds"] = strconv.Itoa(operation_setting.EmptyResponseWindowSeconds)
 	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
 	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
 	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
@@ -427,6 +430,8 @@ func updateOptionMap(key string, value string) (err error) {
 			common.EmailAliasRestrictionEnabled = boolValue
 		case "AutomaticDisableChannelEnabled":
 			common.AutomaticDisableChannelEnabled = boolValue
+		case "EmptyResponseGuardEnabled":
+			operation_setting.EmptyResponseGuardEnabled = boolValue
 		case "AutomaticEnableChannelEnabled":
 			common.AutomaticEnableChannelEnabled = boolValue
 		case "QuotaRemindEnabled":
@@ -689,6 +694,10 @@ func updateOptionMap(key string, value string) (err error) {
 	//	common.ChatLink2 = value
 	case "ChannelDisableThreshold":
 		common.ChannelDisableThreshold, _ = strconv.ParseFloat(value, 64)
+	case "EmptyResponseDisableThreshold":
+		operation_setting.EmptyResponseDisableThreshold, _ = strconv.Atoi(value)
+	case "EmptyResponseWindowSeconds":
+		operation_setting.EmptyResponseWindowSeconds, _ = strconv.Atoi(value)
 	case "QuotaPerUnit":
 		common.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
 	case "SensitiveWords":

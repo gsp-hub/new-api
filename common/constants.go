@@ -140,7 +140,10 @@ var QuotaRemindThreshold = 1000
 // use quota_setting.pre_consume_multiplier and the estimated input cost.
 var PreConsumedQuota = 500
 
-var RetryTimes = 0
+// RetryTimes 是全局重试次数。上游默认 0（完全不重试），
+// 对于要对外提供服务的网关来说，单渠道抖动会直接暴露给客户端，
+// 因此本 fork 默认开启 2 次重试；线上已存在的库仍以数据库中的设置为准。
+var RetryTimes = 2
 
 //var RootUserEmail = ""
 

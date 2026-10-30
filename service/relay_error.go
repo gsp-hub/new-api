@@ -66,6 +66,11 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	}
 	upstreamURLs := common.UpstreamAddresses(c)
 	logger.LogError(c, common.LogText("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, common.LocalLogPreview(err.MaskSensitiveErrorWithStatusCode(upstreamURLs...))))
+	// 空响应（上游 200 但正文为空）单独处理：累计连续次数，达到阈值后禁用渠道。
+	// 该错误不在默认自动禁用白名单内（状态码 502 不命中禁用码段、关键词不匹配），
+	// 因此必须显式判定，否则坏渠道会一直留在轮询池里。
+	HandleEmptyResponseFailure(c, channelError, err)
+
 	if ShouldDisableChannel(err) && channelError.AutoBan {
 		reason := err.MaskSensitiveErrorWithStatusCode(upstreamURLs...)
 		gopool.Go(func() {

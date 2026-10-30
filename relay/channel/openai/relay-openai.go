@@ -15,6 +15,7 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/dto"
 	"github.com/QuantumNous/new-api/relaykit/types"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/tokenkit"
 
 	"github.com/gin-gonic/gin"
@@ -175,6 +176,17 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		}
 	}
 
+	// 空响应拦截（流式）：整个上游流既没有正文、也没有思维链、也没有工具调用和 usage。
+	// 若此时尚未向客户端写过任何字节，可以安全地重试其它渠道；
+	// 若已写过（例如 keepalive ping），重试会把两段流叠加，因此只记录不重试。
+	if operation_setting.EmptyResponseGuardEnabled && responseTextBuilder.Len() == 0 && toolCount == 0 && usage.CompletionTokens == 0 {
+		if !c.Writer.Written() {
+			return nil, service.NewEmptyResponseError(info.ChannelId, info.UpstreamModelName)
+		}
+		logger.LogError(c, common.LogText("stream contained no content (channel #%d, model %s), response already started so retry is skipped", info.ChannelId, info.UpstreamModelName))
+		service.NoteEmptyResponseForStartedStream(c, info.ChannelId)
+	}
+
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
 			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
@@ -281,6 +293,12 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 
 	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
+	}
+
+	// 空响应拦截：上游返回 200 但正文为空时，不能当作成功透传并计费，
+	// 而是转成可重试的 502，交给上层重试链路切换到其它渠道。
+	if operation_setting.EmptyResponseGuardEnabled && service.IsEmptyChatResponse(&simpleResponse) {
+		return nil, service.NewEmptyResponseError(info.ChannelId, info.UpstreamModelName)
 	}
 
 	info.ObserveResponseModel(simpleResponse.Model)

@@ -216,6 +216,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if newAPIError == nil {
 			service.MarkRequestPolicySuccess(c, relayInfo.StreamStatus)
+			// 该渠道本次成功返回了内容，连续空响应计数清零，
+			// 避免「偶发一次空响应 + 长期正常」的渠道被累计到阈值而误禁。
+			service.ResetEmptyResponse(channel.Id)
 			relayInfo.LastError = nil
 			return
 		}
