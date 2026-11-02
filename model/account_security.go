@@ -40,7 +40,7 @@ func ChangeUserPassword(identity AuthSessionIdentity, update *User, firstPasswor
 		if current.Password != "" && common.ValidatePasswordAndHash(update.Password, current.Password) {
 			return common.ErrAccountPasswordSame
 		}
-		changes := map[string]any{"password": hash}
+		changes := map[string]any{"password": hash, "must_change_password": false}
 		if update.Username != "" {
 			changes["username"] = update.Username
 		}

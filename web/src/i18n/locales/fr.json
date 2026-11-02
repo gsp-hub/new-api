@@ -7362,6 +7362,8 @@
     "View account quota": "Voir le quota du compte",
     "Your quota is assigned by the administrator": "Votre quota est attribué par un administrateur",
     "Redeem quota": "Échanger un quota",
-    "View model prices": "Voir les tarifs des modèles"
+    "View model prices": "Voir les tarifs des modèles",
+    "Vous devez changer votre mot de passe avant de continuer": "Votre compte utilise encore le mot de passe initial. Définissez-en un nouveau pour débloquer la console.",
+    "Votre compte utilise encore le mot de passe initial. Définissez-en un nouveau pour débloquer la console.": "Votre compte utilise encore le mot de passe initial. Définissez-en un nouveau pour débloquer la console."
   }
 }

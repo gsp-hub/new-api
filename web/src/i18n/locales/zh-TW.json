@@ -7362,6 +7362,8 @@
     "View account quota": "查看帳戶額度",
     "Your quota is assigned by the administrator": "帳戶額度由管理員分配",
     "Redeem quota": "兌換額度",
-    "View model prices": "查看模型價格"
+    "View model prices": "查看模型價格",
+    "繼續使用前必須修改密碼": "你的帳號仍在使用初始密碼，設定新密碼後即可解鎖控制台。",
+    "你的帳號仍在使用初始密碼，設定新密碼後即可解鎖控制台。": "你的帳號仍在使用初始密碼，設定新密碼後即可解鎖控制台。"
   }
 }

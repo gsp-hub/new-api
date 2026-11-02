@@ -7362,6 +7362,8 @@
     "View account quota": "Xem hạn mức tài khoản",
     "Your quota is assigned by the administrator": "Hạn mức do quản trị viên cấp",
     "Redeem quota": "Đổi hạn mức",
-    "View model prices": "Xem giá mô hình"
+    "View model prices": "Xem giá mô hình",
+    "Bạn phải đổi mật khẩu trước khi tiếp tục": "Tài khoản của bạn vẫn dùng mật khẩu ban đầu. Đặt mật khẩu mới để mở khóa bảng điều khiển.",
+    "Tài khoản của bạn vẫn dùng mật khẩu ban đầu. Đặt mật khẩu mới để mở khóa bảng điều khiển.": "Tài khoản của bạn vẫn dùng mật khẩu ban đầu. Đặt mật khẩu mới để mở khóa bảng điều khiển."
   }
 }

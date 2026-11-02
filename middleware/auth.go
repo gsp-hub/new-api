@@ -49,6 +49,15 @@ func validUserInfo(username string, role int) bool {
 	return true
 }
 
+// passwordChangeAllowlist 放行改密闭环所需的最小端点集合。must_change_password
+// 标记未清期间，authHelper 会拒绝除这些端点外的全部控制台 API（relay 不受影响）。
+var passwordChangeAllowlist = map[string]bool{
+	"GET /api/user/self":      true,
+	"PUT /api/user/self":      true,
+	"GET /api/verify/methods": true,
+	"POST /api/verify":        true,
+}
+
 func authHelper(c *gin.Context, minRole int) {
 	if _, started := c.Get(accessTokenAuditContextKey); !started {
 		defer finishAccessTokenAudit(c)
@@ -64,6 +73,10 @@ func authHelper(c *gin.Context, minRole int) {
 	}
 	if user.Role < minRole {
 		abortWithWebMessage(c, http.StatusForbidden, "AUTH_INSUFFICIENT_PRIVILEGE", common.NewMessage("Unauthorized, insufficient privileges"))
+		return
+	}
+	if user.MustChangePassword && !passwordChangeAllowlist[c.Request.Method+" "+c.Request.URL.Path] {
+		abortWithWebMessage(c, http.StatusForbidden, "AUTH_PASSWORD_CHANGE_REQUIRED", common.NewMessage("You must change your password before continuing"))
 		return
 	}
 	var lookup *accessTokenLookup

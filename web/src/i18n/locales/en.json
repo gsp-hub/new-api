@@ -7362,6 +7362,8 @@
     "View account quota": "View account quota",
     "Your quota is assigned by the administrator": "Your quota is assigned by the administrator",
     "Redeem quota": "Redeem quota",
-    "View model prices": "View model prices"
+    "View model prices": "View model prices",
+    "You must change your password before continuing": "You must change your password before continuing",
+    "Your account still uses the initial password. Set a new one to unlock the console.": "Your account still uses the initial password. Set a new one to unlock the console."
   }
 }

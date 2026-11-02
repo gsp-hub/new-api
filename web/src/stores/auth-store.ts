@@ -55,6 +55,7 @@ export interface AuthUser {
   stripe_customer?: string
   sidebar_modules?: string
   permissions?: UserPermissions
+  must_change_password?: boolean
 }
 
 export interface LoginSession {

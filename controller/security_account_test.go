@@ -23,6 +23,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
+	"github.com/QuantumNous/new-api/middleware"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/oauth"
 	"github.com/QuantumNous/new-api/relaykit/dto"
@@ -905,4 +906,52 @@ func TestSecurityAccountUnbindPreservesUsableLoginMethod(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMustChangePasswordGateBlocksConsoleUntilChanged(t *testing.T) {
+	user, identity := setupSecurityEnrollmentTest(t)
+	require.NoError(t, model.DB.Model(user).Update("must_change_password", true).Error)
+
+	bundle, err := service.CreateLoginSession(user.Id, "password", "127.0.0.1", "gate-test")
+	require.NoError(t, err)
+
+	engine := gin.New()
+	ok := func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) }
+	engine.GET("/api/user/self", middleware.UserAuth(), ok)
+	engine.GET("/api/token/", middleware.UserAuth(), ok)
+
+	do := func(path string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("Authorization", "Bearer "+bundle.AccessToken)
+		w := httptest.NewRecorder()
+		engine.ServeHTTP(w, req)
+		return w
+	}
+
+	blocked := do("/api/token/")
+	require.Equal(t, http.StatusForbidden, blocked.Code, blocked.Body.String())
+	assert.Contains(t, blocked.Body.String(), "AUTH_PASSWORD_CHANGE_REQUIRED")
+
+	allowed := do("/api/user/self")
+	require.Equal(t, http.StatusOK, allowed.Code, allowed.Body.String())
+
+	proof := issueSecurityEnrollmentProof(t, identity, service.VerificationOperation{Scope: service.VerificationScopePasswordChange}, service.VerificationMethodPassword)
+	request, err := common.Marshal(map[string]string{"password": "password123", "original_password": "enrollment-password"})
+	require.NoError(t, err)
+	response := securityEnrollmentRequest(http.MethodPut, "/api/user/self", string(request), proof, identity, UpdateSelf)
+	var result securityEnrollmentResponse
+	require.NoError(t, common.Unmarshal(response.Body.Bytes(), &result))
+	require.True(t, result.Success, response.Body.String())
+
+	stored, err := model.GetUserById(user.Id, true)
+	require.NoError(t, err)
+	assert.False(t, stored.MustChangePassword)
+	assert.True(t, common.ValidatePasswordAndHash("password123", stored.Password))
+
+	// 会话已在改密时轮换：旧 token 失效，新会话不再被门禁拦截。
+	rotated, err := service.CreateLoginSession(user.Id, "password", "127.0.0.1", "gate-test")
+	require.NoError(t, err)
+	bundle = rotated
+	unblocked := do("/api/token/")
+	require.Equal(t, http.StatusOK, unblocked.Code, unblocked.Body.String())
 }
