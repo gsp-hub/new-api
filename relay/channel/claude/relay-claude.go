@@ -17,6 +17,7 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/types"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/model_setting"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -355,6 +356,37 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	return claudeInfo.Usage, nil
 }
 
+// isEmptyClaudeChatResponse 按 claude 原生响应判断空响应：整条响应没有任何
+// content 块，或正文无 text 块、无 tool_use 且 stop_reason=max_tokens（思考型
+// 模型把预算全烧在思维链上，客户端拿不到可用正文却照常计费）时判为空，
+// 触发换渠道重试。其余情况（含 thinking-only 正常结束、search_result 等
+// 服务端工具块）一律不算空，保持透传。
+func isEmptyClaudeChatResponse(resp *dto.ClaudeResponse) bool {
+	if resp == nil {
+		return false
+	}
+	if len(resp.Content) == 0 {
+		return true
+	}
+	hasText := false
+	hasToolUse := false
+	for i := range resp.Content {
+		block := &resp.Content[i]
+		switch block.Type {
+		case "text":
+			if block.Text != nil && strings.TrimSpace(*block.Text) != "" {
+				hasText = true
+			}
+		case "tool_use":
+			hasToolUse = true
+		}
+	}
+	if hasText || hasToolUse {
+		return false
+	}
+	return resp.StopReason == "max_tokens"
+}
+
 func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *types.NewAPIError {
 	var claudeResponse dto.ClaudeResponse
 	err := common.Unmarshal(data, &claudeResponse)
@@ -432,6 +464,10 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	}
 	if claudeResponse.Usage != nil {
 		recordClaudeServerToolUse(info, claudeResponse.Usage.ServerToolUse)
+	}
+
+	if operation_setting.EmptyResponseGuardEnabled && isEmptyClaudeChatResponse(&claudeResponse) {
+		return service.NewEmptyResponseError(info.ChannelId, info.UpstreamModelName)
 	}
 
 	service.IOCopyBytesGracefully(c, httpResp, responseData)

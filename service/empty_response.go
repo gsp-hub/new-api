@@ -61,9 +61,13 @@ func countEmptyResponse(channelId int) {
 // 也没有工具调用，且结束原因不是客户端侧可控的情况。
 //
 // 下列情况不算空响应（属于请求侧或业务侧原因，重试无意义）：
-//   - finish_reason=length：max_tokens 被耗尽（推理模型可能把预算全花在思维链上）
 //   - finish_reason=content_filter：被上游内容审核拦截
 //   - 存在 tool_calls：纯工具调用回复
+//
+// 特例（2026-11-02 实测修正）：finish_reason=length 且正文为空、无工具调用时，
+// 即使思维链非空也判为空响应——思考型模型把整个预算耗在思维链上，客户端
+// 拿不到任何可用正文却照常计费（实测 glm-5.2 reasoning 6783 字、正文 0、
+// 计费 2048 token）。换渠道重试通常能拿到正常回答。
 func IsEmptyChatResponse(resp *dto.OpenAITextResponse) bool {
 	if resp == nil {
 		return false
@@ -77,14 +81,17 @@ func IsEmptyChatResponse(resp *dto.OpenAITextResponse) bool {
 		if strings.TrimSpace(message.StringContent()) != "" {
 			return false
 		}
-		if strings.TrimSpace(message.GetReasoningContent()) != "" {
-			return false
-		}
 		if len(message.ParseToolCalls()) > 0 {
 			return false
 		}
+		if choice.FinishReason == constant.FinishReasonLength {
+			return true
+		}
+		if strings.TrimSpace(message.GetReasoningContent()) != "" {
+			return false
+		}
 		switch choice.FinishReason {
-		case constant.FinishReasonLength, constant.FinishReasonContentFilter, constant.FinishReasonToolCalls:
+		case constant.FinishReasonContentFilter, constant.FinishReasonToolCalls:
 			return false
 		}
 	}

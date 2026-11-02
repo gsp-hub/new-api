@@ -67,8 +67,21 @@ func TestIsEmptyChatResponse(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "max_tokens exhausted (finish_reason=length) is not empty",
+			name: "budget burned on reasoning (finish_reason=length, no content) is empty",
 			resp: chatResponseWithChoice("", "", "length"),
+			want: true,
+		},
+		{
+			name: "budget burned on reasoning with exposed thinking is still empty",
+			resp: &dto.OpenAITextResponse{Choices: []dto.OpenAITextResponseChoice{{
+				Message:      dto.Message{Role: "assistant", Content: "", ReasoningContent: &reasoningText},
+				FinishReason: "length",
+			}}},
+			want: true,
+		},
+		{
+			name: "normal truncation (finish_reason=length with partial content) is not empty",
+			resp: chatResponseWithChoice("partial ans", "", "length"),
 			want: false,
 		},
 		{
@@ -77,8 +90,6 @@ func TestIsEmptyChatResponse(t *testing.T) {
 			want: false,
 		},
 	}
-	// 补一个非空 reasoning 的用例
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsEmptyChatResponse(tt.resp); got != tt.want {
