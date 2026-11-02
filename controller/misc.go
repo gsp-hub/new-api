@@ -38,6 +38,20 @@ func TestStatus(c *gin.Context) {
 	return
 }
 
+// anonymousHiddenStatusKeys 是 /api/status 对匿名访客隐藏的字段：版本与建站
+// 指纹、对外定价口径、服务地址、客户端接入模板与安装向导状态。扫描器靠这些
+// 识别并收录中转站；内部站未登录阶段没有页面消费它们。
+var anonymousHiddenStatusKeys = []string{
+	"version",
+	"start_time",
+	"server_address",
+	"usd_exchange_rate",
+	"price",
+	"stripe_unit_price",
+	"chats",
+	"setup",
+}
+
 func GetStatus(c *gin.Context) {
 
 	cs := console_setting.GetConsoleSetting()
@@ -127,6 +141,14 @@ func GetStatus(c *gin.Context) {
 		"log_max_range_days":          operation_setting.GetLogSetting().MaxRangeDays,
 		"quota_remind_enabled":        common.QuotaRemindEnabled,
 		"quota_remind_threshold":      common.QuotaRemindThreshold,
+	}
+
+	// 内部站收口：未携带有效控制台凭证的请求抹掉店面/指纹字段，登录页所需
+	// 的登录开关与展示配置全部保留；持有效会话的请求返回完整状态。
+	if _, authed := c.Get("id"); !authed {
+		for _, key := range anonymousHiddenStatusKeys {
+			delete(data, key)
+		}
 	}
 
 	// 根据启用状态注入可选内容
