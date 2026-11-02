@@ -7358,6 +7358,10 @@
     "Zhipu": "智谱",
     "Zhipu GLM": "智谱GLM",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "View account quota": "查看账户额度",
+    "Your quota is assigned by the administrator": "账户额度由管理员分配",
+    "Redeem quota": "兑换额度",
+    "View model prices": "查看模型价格"
   }
 }

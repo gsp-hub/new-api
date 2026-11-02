@@ -36,6 +36,7 @@ import { OverviewDashboard } from '../overview-dashboard'
 const storageKey = 'dashboard_overview_setup_guide_expanded'
 let client: QueryClient
 let keyLookupError: Error | null
+let onlineTopupEnabled = false
 
 beforeEach(() => {
   window.localStorage.clear()
@@ -52,6 +53,7 @@ beforeEach(() => {
     defaultOptions: { queries: { retry: false } },
   })
   keyLookupError = null
+  onlineTopupEnabled = false
   vi.spyOn(api, 'get').mockImplementation(async (url) => {
     switch (url) {
       case '/api/token/?p=1&size=10':
@@ -73,6 +75,13 @@ beforeEach(() => {
               faq_enabled: false,
               uptime_kuma_enabled: false,
             },
+          },
+        }
+      case '/api/user/topup/info':
+        return {
+          data: {
+            success: true,
+            data: { enable_online_topup: onlineTopupEnabled },
           },
         }
       case '/api/user/models':
@@ -107,6 +116,33 @@ async function renderOverview() {
 }
 
 describe('overview setup guide', () => {
+  it('shows the administrator-assigned quota step when online payment is unavailable', async () => {
+    useAuthStore
+      .getState()
+      .auth.setUser({ id: 1, username: 'new-user', role: 1 })
+    await renderOverview()
+
+    expect(
+      await screen.findByText('Your quota is assigned by the administrator')
+    ).toBeVisible()
+    expect(screen.queryByText('Add credits')).not.toBeInTheDocument()
+  })
+
+  it('preserves the payment step when online topup is available', async () => {
+    onlineTopupEnabled = true
+    useAuthStore
+      .getState()
+      .auth.setUser({ id: 1, username: 'new-user', role: 1 })
+    await renderOverview()
+
+    expect(
+      await screen.findByText('Keep enough balance before production traffic')
+    ).toBeVisible()
+    expect(
+      screen.queryByText('Your quota is assigned by the administrator')
+    ).not.toBeInTheDocument()
+  })
+
   it('shows usage first and only a header entry when setup is complete', async () => {
     await renderOverview()
 

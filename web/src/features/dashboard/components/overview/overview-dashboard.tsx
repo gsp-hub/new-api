@@ -50,7 +50,9 @@ import { Button } from '@/components/ui/button'
 import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
+import { useTopupInfo } from '@/features/wallet/hooks/use-topup-info'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { useStatus } from '@/hooks/use-status'
 import { getUserModels } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { MOTION_TRANSITION } from '@/lib/motion'
@@ -75,8 +77,8 @@ const SETUP_GUIDE_VISIBILITY_STORAGE_KEY =
 
 const SETUP_GUIDE_CODE_PATTERN = [
   'const request = await client.responses.create({',
-  "  model: 'gpt-4.1-mini',",
-  "  input: 'Start routing traffic',",
+  "  model: 'glm-5.3',",
+  "  input: 'Hello',",
   '})',
   '',
   'if (request.output_text) {',
@@ -465,6 +467,15 @@ export function OverviewDashboard() {
   const setupGuideId = useId()
   const setupGuideToggleRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.auth.user)
+  const { status } = useStatus()
+  const { topupInfo } = useTopupInfo()
+  const onlineTopupEnabled = Boolean(
+    topupInfo?.enable_online_topup ||
+    topupInfo?.enable_stripe_topup ||
+    topupInfo?.enable_creem_topup ||
+    topupInfo?.enable_waffo_topup ||
+    topupInfo?.enable_waffo_pancake_topup
+  )
   const { items: apiInfoItems } = useApiInfo()
   const {
     apiInfo: showApiInfoPanel,
@@ -514,8 +525,10 @@ export function OverviewDashboard() {
         completed: Boolean(preferredKey),
       },
       {
-        title: t('Add credits'),
-        description: t('Keep enough balance before production traffic'),
+        title: onlineTopupEnabled ? t('Add credits') : t('View account quota'),
+        description: onlineTopupEnabled
+          ? t('Keep enough balance before production traffic')
+          : t('Your quota is assigned by the administrator'),
         to: '/wallet',
         icon: CreditCard,
         completed: remainQuota > 0 || usedQuota > 0,
@@ -528,7 +541,7 @@ export function OverviewDashboard() {
         completed: requestCount > 0,
       },
     ],
-    [preferredKey, remainQuota, requestCount, t, usedQuota]
+    [onlineTopupEnabled, preferredKey, remainQuota, requestCount, t, usedQuota]
   )
 
   const quickActions = useMemo<QuickAction[]>(
@@ -554,7 +567,7 @@ export function OverviewDashboard() {
       },
       {
         title: t('Pricing'),
-        description: t('Review model rates before scaling traffic'),
+        description: t('View model prices'),
         to: '/pricing',
         icon: BookOpen,
       },
@@ -592,8 +605,16 @@ export function OverviewDashboard() {
   )
 
   const requestExample = useMemo<RequestExample>(() => {
-    const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
-    const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
+    const endpoint = normalizeEndpoint(
+      apiInfoItems[0]?.url ||
+        (typeof status?.server_address === 'string'
+          ? status.server_address
+          : undefined)
+    )
+    const model =
+      modelsQuery.data?.find((name) => name === 'glm-5.3') ??
+      modelsQuery.data?.[0] ??
+      'glm-5.3'
     const keyName = preferredKey?.name ?? t('No API key yet')
     const ready = Boolean(preferredKey?.id && model)
 
@@ -607,7 +628,7 @@ export function OverviewDashboard() {
         : 'sk-...',
       ready,
     }
-  }, [apiInfoItems, modelsQuery.data, preferredKey, t])
+  }, [apiInfoItems, modelsQuery.data, preferredKey, status?.server_address, t])
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length

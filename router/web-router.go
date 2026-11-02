@@ -22,6 +22,11 @@ func SetWebRouter(router *gin.Engine, assets WebAssets, pluginDispatcher gin.Han
 	frontendFS := common.EmbedFolder(assets.BuildFS, "web/dist")
 	compress := gzip.Gzip(gzip.DefaultCompression)
 
+	router.GET("/docs", func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
+		c.File("docs/index.html")
+	})
+
 	router.NoRoute(
 		pluginDispatcher,
 		middleware.RouteTag("web"),

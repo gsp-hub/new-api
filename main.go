@@ -231,6 +231,9 @@ func main() {
 	sig := <-quit
 	common.SysLog(common.LogText("received signal: %v, shutting down...", sig))
 
+	if common.DataExportEnabled {
+		model.SaveQuotaDataCache()
+	}
 	// SSE streams may run for minutes; give them time to finish before forced exit
 	shutdownTimeout := time.Duration(common.GetEnvOrDefault("SHUTDOWN_TIMEOUT_SECONDS", 120)) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)

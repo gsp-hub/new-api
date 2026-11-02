@@ -137,7 +137,6 @@ func registerRelayCompatGroup(parent *gin.Engine, prefix string) {
 	group.Use(middleware.SystemPerformanceCheck())
 	group.Use(middleware.TokenAuth())
 	group.Use(middleware.ModelRequestRateLimit())
-	group.Use(middleware.Distribute())
 	registerRelayHTTPRoutes(group)
 }
 
@@ -151,6 +150,8 @@ func registerRelayCompatGroup(parent *gin.Engine, prefix string) {
 //	http://host/chat/completions        base 填 host，客户端自行追加路径
 //	http://host/v1/v1/chat/completions  base 填了 /v1，客户端又补了一次
 func registerRelayHTTPRoutes(httpRouter *gin.RouterGroup) {
+	// Distribute 负责在解析请求体后完成渠道选择，必须在端点注册前挂载。
+	httpRouter.Use(middleware.Distribute())
 
 	// claude related routes
 	// TODO: /messages/count_tokens is disabled. The current controller.CountClaudeTokens

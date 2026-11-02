@@ -40,6 +40,44 @@ beforeEach(async () => {
   })
 })
 
+it('shows balance redemption instead of payment and referral copy when topup is disabled', async () => {
+  render(
+    <I18nextProvider i18n={i18n}>
+      <RechargeFormCard
+        topupInfo={{
+          enable_online_topup: false,
+          enable_stripe_topup: false,
+          pay_methods: [],
+          min_topup: 1,
+          stripe_min_topup: 1,
+          amount_options: [],
+          discount: {},
+          enable_redemption: true,
+        }}
+        presetAmounts={[]}
+        selectedPreset={null}
+        topupAmount={1}
+        paymentAmount={0}
+        calculating={false}
+        paymentLoading={null}
+        redemptionCode=''
+        redeeming={false}
+        onSelectPreset={vi.fn()}
+        onTopupAmountChange={vi.fn()}
+        onPaymentMethodSelect={vi.fn()}
+        onRedemptionCodeChange={vi.fn()}
+        onRedeem={vi.fn()}
+      />
+    </I18nextProvider>
+  )
+  expect(screen.getAllByText('兑换额度')).toHaveLength(2)
+  expect(screen.getByPlaceholderText('输入您的兑换码')).toBeVisible()
+  expect(screen.queryByText('添加资金')).not.toBeInTheDocument()
+  expect(
+    screen.queryByText('尚未启用在线充值。请使用兑换码或联系管理员。')
+  ).not.toBeInTheDocument()
+})
+
 it('translates billing history statuses and updates them when the language changes', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({
     data: {

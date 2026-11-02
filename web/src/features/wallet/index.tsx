@@ -83,6 +83,13 @@ export function Wallet(props: WalletProps) {
   const { status } = useStatus()
   const { currency } = useSystemConfig()
   const { topupInfo, presetAmounts, loading: topupLoading } = useTopupInfo()
+  const onlineTopupEnabled = Boolean(
+    topupInfo?.enable_online_topup ||
+    topupInfo?.enable_stripe_topup ||
+    topupInfo?.enable_creem_topup ||
+    topupInfo?.enable_waffo_topup ||
+    topupInfo?.enable_waffo_pancake_topup
+  )
 
   // Calculate effective exchange rate - when display type is USD, use rate of 1
   const effectiveUsdExchangeRate = useMemo(() => {
@@ -102,7 +109,7 @@ export function Wallet(props: WalletProps) {
     loading: affiliateLoading,
     transferQuota,
     transferring,
-  } = useAffiliate()
+  } = useAffiliate(onlineTopupEnabled)
   const { redeeming, redeemCode } = useRedemption()
   const { processing: creemProcessing, processCreemPayment } = useCreemPayment()
   const { processing: waffoProcessing, processWaffoPayment } = useWaffoPayment()
@@ -139,7 +146,7 @@ export function Wallet(props: WalletProps) {
   // Initialize topup amount when topup info is loaded
   const topupAmountInitializedRef = useRef(false)
   useEffect(() => {
-    if (topupInfo && !topupAmountInitializedRef.current) {
+    if (topupInfo && onlineTopupEnabled && !topupAmountInitializedRef.current) {
       topupAmountInitializedRef.current = true
       const minTopup = getMinTopupAmount(topupInfo)
       setTopupAmount(minTopup)
@@ -148,7 +155,7 @@ export function Wallet(props: WalletProps) {
       const defaultPaymentType = getDefaultPaymentType(topupInfo)
       calculatePaymentAmount(minTopup, defaultPaymentType)
     }
-  }, [topupInfo, calculatePaymentAmount])
+  }, [topupInfo, onlineTopupEnabled, calculatePaymentAmount])
 
   // Get current payment type (selected or default)
   const getCurrentPaymentType = useCallback(() => {
@@ -292,7 +299,7 @@ export function Wallet(props: WalletProps) {
 
             <div
               className={
-                showSubscriptionPanel
+                onlineTopupEnabled && showSubscriptionPanel
                   ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
                   : 'grid gap-4'
               }
@@ -331,23 +338,27 @@ export function Wallet(props: WalletProps) {
                 />
               </div>
 
-              <SubscriptionPlansCard
-                topupInfo={topupInfo}
-                onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                userQuota={user?.quota}
-                onPurchaseSuccess={fetchUser}
-              />
+              {onlineTopupEnabled && (
+                <SubscriptionPlansCard
+                  topupInfo={topupInfo}
+                  onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                  userQuota={user?.quota}
+                  onPurchaseSuccess={fetchUser}
+                />
+              )}
             </div>
 
-            <AffiliateRewardsCard
-              user={user}
-              affiliateLink={affiliateLink}
-              onTransfer={() => setTransferDialogOpen(true)}
-              complianceConfirmed={
-                topupInfo?.payment_compliance_confirmed !== false
-              }
-              loading={affiliateLoading}
-            />
+            {onlineTopupEnabled && (
+              <AffiliateRewardsCard
+                user={user}
+                affiliateLink={affiliateLink}
+                onTransfer={() => setTransferDialogOpen(true)}
+                complianceConfirmed={
+                  topupInfo?.payment_compliance_confirmed !== false
+                }
+                loading={affiliateLoading}
+              />
+            )}
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>

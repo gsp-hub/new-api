@@ -196,13 +196,17 @@ export function RechargeFormCard({
 
   return (
     <TitledCard
-      title={t('Add Funds')}
-      description={t('Choose an amount and payment method')}
+      title={hasAnyTopup ? t('Add Funds') : t('Redeem quota')}
+      description={
+        hasAnyTopup
+          ? t('Choose an amount and payment method')
+          : t('Your quota is assigned by the administrator')
+      }
       icon={<WalletCards className='h-4 w-4' />}
       iconTone='success'
       disableHoverEffect
       action={
-        onOpenBilling ? (
+        hasAnyTopup && onOpenBilling ? (
           <Button
             variant='outline'
             size='sm'
@@ -487,15 +491,7 @@ export function RechargeFormCard({
             </>
           )}
         </div>
-      ) : (
-        <Alert>
-          <AlertDescription>
-            {t(
-              'Online topup is not enabled. Please use redemption code or contact administrator.'
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+      ) : null}
 
       {/* Creem Products Section */}
       {enableCreemTopup &&

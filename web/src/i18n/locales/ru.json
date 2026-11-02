@@ -7358,6 +7358,10 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "View account quota": "Проверить квоту аккаунта",
+    "Your quota is assigned by the administrator": "Квоту назначает администратор",
+    "Redeem quota": "Активировать квоту",
+    "View model prices": "Посмотреть цены моделей"
   }
 }
