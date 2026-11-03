@@ -1,0 +1,77 @@
+name: newapi-commercial
+
+services:
+  new-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: newapi-commercial:latest
+    container_name: newapi-commercial
+    restart: always
+    command: --log-dir /app/logs
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - SQL_DSN=postgresql://${PG_USER:-newapi}:${PG_PASSWORD:?set in .env}@postgres:5432/${PG_DB:-newapi}
+      - REDIS_CONN_STRING=redis://redis
+      - SESSION_SECRET=${SESSION_SECRET:?set in .env}
+      - SESSION_COOKIE_SECURE=true
+      - TZ=Asia/Shanghai
+      - GLOBAL_API_RATE_LIMIT=360
+      - GLOBAL_API_RATE_LIMIT_DURATION=180
+      - CRITICAL_RATE_LIMIT=50
+      - CRITICAL_RATE_LIMIT_DURATION=1200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -q success"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: newapi-commercial-pg
+    restart: always
+    environment:
+      - POSTGRES_USER=${PG_USER:-newapi}
+      - POSTGRES_PASSWORD=${PG_PASSWORD:?set in .env}
+      - POSTGRES_DB=${PG_DB:-newapi}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-newapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: newapi-commercial-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: newapi-commercial-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pg_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
