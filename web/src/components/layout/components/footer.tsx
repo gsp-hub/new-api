@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
+import { isSameOriginUrl } from '@/lib/is-same-origin'
 
 interface FooterLink {
   text: string
@@ -57,7 +58,9 @@ function FooterLinkItem(props: { link: FooterLink }) {
     return (
       <a
         href={props.link.href}
-        target='_blank'
+        target={
+          isSameOriginUrl(props.link.href) ? undefined : '_blank'
+        }
         rel='noopener noreferrer'
         className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
       >

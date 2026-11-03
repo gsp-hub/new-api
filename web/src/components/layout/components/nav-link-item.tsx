@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
 
+import { isSameOriginUrl } from '@/lib/is-same-origin'
 import { cn } from '@/lib/utils'
 
 import type { TopNavLink } from '../types'
@@ -39,10 +40,11 @@ export function NavLinkItem({ link, className }: NavLinkItemProps) {
   )
 
   if (link.external) {
+    const sameOrigin = isSameOriginUrl(link.href)
     return (
       <a
         href={link.href}
-        target='_blank'
+        target={sameOrigin ? undefined : '_blank'}
         rel='noopener noreferrer'
         className={linkClassName}
         aria-disabled={link.disabled}

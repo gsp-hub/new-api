@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { isSameOriginUrl } from '@/lib/is-same-origin'
 
 import { type TopNavLink } from '../types'
 
@@ -71,7 +72,7 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
                     external ? (
                       <a
                         href={href}
-                        target='_blank'
+                        target={isSameOriginUrl(href) ? undefined : '_blank'}
                         rel='noopener noreferrer'
                         className={!isActive ? 'text-muted-foreground' : ''}
                       >
@@ -107,7 +108,7 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
             <a
               key={`${title}-${href}`}
               href={href}
-              target='_blank'
+              target={isSameOriginUrl(href) ? undefined : '_blank'}
               rel='noopener noreferrer'
               className={`hover:text-primary text-sm font-medium transition-colors ${isActive ? '' : 'text-muted-foreground'}`}
             >

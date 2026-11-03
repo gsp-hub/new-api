@@ -32,6 +32,7 @@ import { useNotifications } from '@/hooks/use-notifications'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 import { cn } from '@/lib/utils'
+import { isSameOriginUrl } from '@/lib/is-same-origin'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { defaultTopNavLinks } from '../config/top-nav.config'
@@ -247,7 +248,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                       key={`${link.title}:${link.href}`}
                       href={link.href}
                       title={t(link.title)}
-                      target='_blank'
+                      target={isSameOriginUrl(link.href) ? undefined : '_blank'}
                       rel='noopener noreferrer'
                       aria-disabled={link.disabled}
                       tabIndex={link.disabled ? -1 : undefined}
@@ -379,7 +380,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                   <a
                     key={`${link.title}:${link.href}`}
                     href={link.href}
-                    target='_blank'
+                    target={isSameOriginUrl(link.href) ? undefined : '_blank'}
                     rel='noopener noreferrer'
                     aria-disabled={link.disabled}
                     tabIndex={link.disabled ? -1 : undefined}
