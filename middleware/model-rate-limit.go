@@ -248,8 +248,13 @@ func EnforceGroupModelRequestRateLimit(c *gin.Context, modelName string) bool {
 		return true
 	}
 	maxCount, found := setting.GetGroupModelRateLimit(group, modelName)
-	if !found || maxCount <= 0 {
+	if !found {
 		return true
+	}
+	if maxCount <= 0 {
+		// explicit 0 = the group is denied this model entirely
+		abortWithOpenAiMessage(c, http.StatusTooManyRequests, i18n.T(c, i18n.MsgRateLimitTotalReached, map[string]any{"Minutes": setting.ModelRequestRateLimitDurationMinutes, "Max": maxCount}))
+		return false
 	}
 	duration := rateLimitDurationSeconds(setting.ModelRequestRateLimitDurationMinutes)
 	subject := fmt.Sprintf("%d:%s:%s", c.GetInt("id"), group, modelName)
