@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>51a Online · AI API 文档</title>
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f6f7f9; --fg: #1a1d23; --fg2: #555b66;
+  --line: #e5e7eb; --acc: #4f46e5; --accbg: #eef2ff;
+  --code-bg: #0f172a; --code-fg: #e2e8f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1115; --bg2: #16181e; --fg: #e6e8ec; --fg2: #9aa1ad; --line: #262a33; --acc: #818cf8; --accbg: #1e1b4b; --code-bg: #020617; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--fg); line-height: 1.75; }
+a { color: var(--acc); text-decoration: none; } a:hover { text-decoration: underline; }
+.mono, code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+code { background: var(--accbg); color: var(--acc); padding: 2px 6px; border-radius: 5px; font-size: .88em; }
+header.hero { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; padding: 56px 24px 88px; }
+header.hero .in { max-width: 1080px; margin: 0 auto; }
+header.hero h1 { margin: 0 0 10px; font-size: 34px; letter-spacing: -.5px; }
+header.hero p { margin: 0; opacity: .9; font-size: 16px; }
+header.hero .badges { margin-top: 18px; }
+header.hero .badges span { display: inline-block; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 4px 14px; font-size: 13px; margin-right: 8px; }
+.layout { max-width: 1080px; margin: -56px auto 80px; padding: 0 24px; display: flex; gap: 40px; }
+nav.toc { width: 220px; flex-shrink: 0; position: sticky; top: 24px; align-self: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 18px 0; box-shadow: 0 8px 24px rgba(0,0,0,.06); max-height: calc(100vh - 48px); overflow: auto; }
+nav.toc a { display: block; padding: 8px 22px; color: var(--fg2); font-size: 14px; border-left: 3px solid transparent; }
+nav.toc a.active, nav.toc a:hover { color: var(--acc); border-left-color: var(--acc); background: var(--accbg); text-decoration: none; }
+main { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 40px 48px; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+section { padding-bottom: 40px; margin-bottom: 40px; border-bottom: 1px solid var(--line); }
+section:last-child { border: none; margin-bottom: 0; }
+h2 { font-size: 24px; margin: 0 0 18px; letter-spacing: -.3px; }
+h3 { font-size: 18px; margin: 28px 0 12px; }
+ol.steps li { margin: 10px 0; }
+.tblwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; color: var(--fg2); font-weight: 600; padding: 10px 12px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:hover td { background: var(--bg2); }
+td.desc { color: var(--fg2); font-size: 13px; max-width: 380px; }
+.tag { display: inline-block; font-size: 11px; color: #b45309; background: #fef3c7; border-radius: 4px; padding: 0 6px; margin-left: 6px; }
+@media (prefers-color-scheme: dark) { .tag { color: #fcd34d; background: #3b2f0b; } }
+.note { background: var(--accbg); border-radius: 10px; padding: 12px 16px; font-size: 14px; color: var(--fg2); }
+.proto li { margin: 6px 0; }
+.faq li { margin: 12px 0; }
+.faq b { color: var(--fg); }
+.tabbar { display: flex; gap: 4px; margin-bottom: -1px; position: relative; z-index: 2; }
+.tabbar button { border: 1px solid var(--line); border-bottom: none; background: var(--bg2); color: var(--fg2); padding: 7px 16px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; }
+.tabbar button.on { background: var(--code-bg); color: var(--code-fg); border-color: var(--code-bg); }
+.codewrap { position: relative; }
+.codewrap pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: 0 10px 10px 10px; overflow-x: auto; }
+.codewrap pre.plain { border-radius: 10px; }
+.codewrap pre code { background: none; color: inherit; padding: 0; font-size: 13px; line-height: 1.7; }
+.copy { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.12); color: #cbd5e1; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.22); }
+footer { text-align: center; color: var(--fg2); font-size: 13px; padding: 30px 0 50px; }
+.topnav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 28px; padding: 0 32px; height: 56px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.topnav .brand { font-weight: 700; font-size: 15px; color: var(--fg); letter-spacing: -.2px; }
+.topnav .brand span { color: var(--acc); }
+.topnav .tlinks { display: flex; gap: 4px; margin-left: auto; }
+.topnav .tlinks a { color: var(--fg2); font-size: 14px; padding: 6px 14px; border-radius: 8px; }
+.topnav .tlinks a:hover { color: var(--fg); background: var(--bg2); text-decoration: none; }
+.topnav .tlinks a.active { color: var(--acc); background: var(--accbg); font-weight: 500; }
+.topnav .console { margin-left: 12px; background: var(--acc); color: #fff !important; border-radius: 8px; padding: 6px 16px !important; font-weight: 500; }
+.topnav .console:hover { opacity: .88; background: var(--acc); }
+.tocgroup .tocparent { display: flex; justify-content: space-between; align-items: center; }
+.chev { display: inline-block; transition: transform .2s; color: var(--fg2); font-size: 15px; }
+.tocgroup.open .chev { transform: rotate(90deg); }
+.tocsub { display: none; }
+.tocgroup.open .tocsub { display: block; }
+.tocsub a { padding-left: 38px !important; font-size: 13px !important; }
+@media (max-width: 900px) { .layout { display: block; } nav.toc { display: none; } main { padding: 24px; } }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="/">51a<span>.online</span></a>
+  <div class="tlinks">
+    <a href="/">首页</a>
+    <a href="/pricing">模型广场</a>
+    <a href="/docs" class="active">文档</a>
+    <a href="/about">关于</a>
+    <a href="/dashboard" class="console">控制台</a>
+  </div>
+</nav>
+<header class="hero"><div class="in">
+<h1>51a Online · AI API 文档</h1>
+<p>一个密钥访问 GPT / GLM / DeepSeek —— 官方协议兼容，按量计费，缓存享折扣</p>
+<div class="badges"><span>OpenAI 兼容</span><span>Claude Messages 兼容</span><span>流式输出</span><span>提示词缓存价</span></div>
+</div></header>
+<div class="layout">
+<nav class="toc" id="toc">
+<a href="#quickstart">快速开始</a>
+<a href="#models">模型与价格</a>
+<a href="#sdk">SDK 调用</a>
+<div class="tocgroup"><a class="tocparent" href="#tools" onclick="tg(event,this)">工具接入<span class="chev">›</span></a><div class="tocsub">
+<a href="#tool-generic">通用配置</a>
+<a href="#tool-cherry">Cherry Studio</a>
+<a href="#tool-vscode">VS Code 插件</a>
+<a href="#tool-claude">Claude Code</a>
+<a href="#tool-codex">Codex CLI</a>
+</div></div>
+<a href="#pick">模型怎么选</a>
+<a href="#billing">计费说明</a>
+<a href="#faq">常见问题</a>
+</nav>
+<main>
+<section id="quickstart"><h2>快速开始</h2>
+<p>三步开始使用：</p>
+<ol class="steps">
+<li><b>注册并登录</b> — 在 <a href="https://model.51a.online/register" target="_blank">注册页</a>创建账号（需邮箱验证）。</li>
+<li><b>创建 API Key</b> — 控制台「令牌」页新建令牌，复制 <code>sk-...</code> 开头的密钥。</li>
+<li><b>选工具照着填</b> — 见下方「工具接入」章节，地址和 Key 全站通用。</li>
+</ol>
+<p>核心信息只有两样：<b>Base URL</b> = <code>https://model.51a.online</code>，<b>API Key</b> = 你的 <code>sk-...</code>。</p>
+</section>
+<section id="models"><h2>模型与价格</h2>
+<p>以下为当前在售模型，价格对齐官方 API。标注 <span class="tag">分时</span> 的模型按峰谷计费（详见计费说明）。</p>
+<h3 class="mvendor">GPT</h3>
+<div class="tblwrap"><table><thead><tr><th>模型</th><th>输入 / 输出（$/1M tokens）</th><th>适用场景</th></tr></thead><tbody><tr><td><td class="mono">gpt-6-astra</td></td><td><td class="mono">$10 / $50</td></td><td><td class="desc">⚡ 最强最贵档。适合：复杂架构改造、跨多文件深度重构、疑难 bug 攻坚。不适合：日常小改、批量生成（成本是 sol 的 5 倍，出字速度也偏慢）。</td></td></tr><tr><td><td class="mono">gpt-6-luna</td></td><td><td class="mono">$0.1 / $0.5</td></td><td><td class="desc">💰 最便宜的 GPT-6。适合：简单改写、格式化、批量脚本、高吞吐重复任务。不适合：复杂推理、多步 Agent（容易漏步骤）。</td></td></tr><tr><td><td class="mono">gpt-6-sol</td></td><td><td class="mono">$2 / $10</td></td><td><td class="desc">✅ 日常主力，性价比最稳。适合：绝大多数编码任务、Agent 工作流、代码审查。不适合：极限难题（让位 astra/6.1-sol）。</td></td></tr><tr><td><td class="mono">gpt-6.1-sol</td></td><td><td class="mono">$2 / $10</td></td><td><td class="desc">✅ GPT 首选档。性能接近 astra 但只收 sol 的价。适合：复杂编码、多步 Agent、电脑操作、专业长任务。价格 in $2 / out $10。新任务优先用它，其次才 gpt-6-sol。</td></td></tr><tr><td><td class="mono">gpt-6.1-terra</td></td><td><td class="mono">$1 / $5</td></td><td><td class="desc">💡 均衡档，价格是 sol 的一半。适合：需要看图的视觉推理、电脑操作、写作与文档润色。不适合：超复杂重构。</td></td></tr><tr><td><td class="mono">gpt-image-1.5</td></td><td><td class="mono">$0.04 / 次</td></td><td><td class="desc">图像模型，面向提示词驱动的生成、编辑与视觉设计工作流</td></td></tr><tr><td><td class="mono">gpt-image-2</td></td><td><td class="mono">$0.06 / 次</td></td><td><td class="desc">图像模型，面向提示词驱动的生成、编辑与视觉设计工作流</td></td></tr><tr><td><td class="mono">gpt-image-2.5</td></td><td><td class="mono">$0.08 / 次</td></td><td><td class="desc"></td></td></tr></tbody></table></div>
+<h3 class="mvendor">GLM</h3>
+<div class="tblwrap"><table><thead><tr><th>模型</th><th>输入 / 输出（$/1M tokens）</th><th>适用场景</th></tr></thead><tbody><tr><td><td class="mono">glm-4.5</td></td><td><td class="mono">$0.6 / $2.20002</td></td><td><td class="desc">更老的一代，能力弱于 4.6 与 5.x。仅作兼容保留，不建议新项目使用。</td></td></tr><tr><td><td class="mono">glm-4.5-air</td></td><td><td class="mono">$0.11976 / $0.2994</td></td><td><td class="desc">轻量便宜版，能力弱。适合：简单分类、低价值批量调用、低成本智能体。不建议用于正经开发。</td></td></tr><tr><td><td class="mono">glm-4.5v</td></td><td><td class="mono">$0.3 / $0.9</td></td><td><td class="desc">🖼 视觉专用模型，看图纸/截图/UI 最准，速度快（约 1.5s）。适合：看图问答、OCR、界面理解。不适合：长程编程（请用 glm-5.3）。</td></td></tr><tr><td><td class="mono">glm-4.6</td></td><td><td class="mono">$0.6 / $2.20002</td></td><td><td class="desc">上一代主力，能力明显弱于 5.x 系列。仅作兼容保留。新任务请用 glm-5.3。</td></td></tr><tr><td><td class="mono">glm-4.6v</td></td><td><td class="mono">$0.3 / $0.9</td></td><td><td class="desc">🖼 视觉专用模型，比 4.5v 新一版，识图与细粒度描述略强。适合：复杂图表、设计稿评审、看图推理。不适合：长程编程。</td></td></tr><tr><td><td class="mono">glm-5.2</td></td><td><td class="mono">$1.1976 / $4.19161</td></td><td><td class="desc">5.3 的基础模型，能力接近但编程略弱，现已基本被 5.3 取代。除非遇到 5.3 的兼容性问题，否则直接用 glm-5.3。价格同 5.3：in $1.20 / out $4.19。</td></td></tr><tr><td><td class="mono">glm-5.3</td></td><td><td class="mono">$1.1976 / $4.19161</td></td><td><td class="desc">✅ GLM 旗舰，1M 上下文，编程体感强。适合：长程编程 Agent、大项目交付、长代码库理解。不适合：超大批量任务（比 flash 贵约 10 倍）。</td></td></tr><tr><td><td class="mono">glm-5.3-flash</td></td><td><td class="mono">$0.11976 / $0.41916</td></td><td><td class="desc">💰 GLM 里最快最便宜，且是 GLM 系唯一原生多模态（看图/视频/文件）。适合：日常问答、批量任务、需要看图的活。不适合：复杂重构、高难推理。</td></td></tr></tbody></table></div>
+<h3 class="mvendor">DeepSeek</h3>
+<div class="tblwrap"><table><thead><tr><th>模型</th><th>输入 / 输出（$/1M tokens）</th><th>适用场景</th></tr></thead><tbody><tr><td><td class="mono">deepseek-chat</td></td><td><td class="mono">$0.28 / $0.42</td></td><td><td class="desc">旧版 DeepSeek 对话模型（非 V4.1），能力弱于 deepseek-flash。仅作兼容保留。新任务请用 deepseek-flash。</td></td></tr><tr><td><td class="mono">deepseek-flash <span class="tag">分时</span></td></td><td><td class="mono">$0.15 / $0.6</td></td><td><td class="desc">💰 超便宜，支持看图，1M 上下文。适合：大批量处理、成本敏感场景、看图任务。不适合：最难推理。已启用分时计价：低谷 in $0.15 / out $0.60，高峰（工作日 9-12、14-18 点）翻倍。</td></td></tr><tr><td><td class="mono">deepseek-reasoner</td></td><td><td class="mono">$0.28 / $0.42</td></td><td><td class="desc">旧版 DeepSeek 推理模型（非 V4.1），仅作兼容保留。新任务请用 deepseek-flash。</td></td></tr><tr><td><td class="mono">deepseek-v4-flash <span class="tag">分时</span></td></td><td><td class="mono">$0.15 / $0.6</td></td><td><td class="desc">⚠️ 官方的旧模型名，与 deepseek-flash 是同一个模型（V4.1-Flash）、同价、由同一模型服务。已启用分时计价：低谷 in $0.15 / out $0.60，高峰（工作日 9-12、14-18 点）翻倍。新任务建议直接写 deepseek-flash。</td></td></tr></tbody></table></div>
+<p class="note">模型名加 <code>[1M]</code> 后缀（如 <code>glm-5.2[1M]</code>）表示超长上下文版本，适合 27 万 token 以上的请求，超长部分按官方阶梯价计费。</p>
+</section>
+<section id="sdk"><h2>SDK 调用</h2>
+<p>网关同时兼容三种协议，同一密钥通用：</p>
+<ul class="proto">
+<li><code>/v1/chat/completions</code> — OpenAI Chat 格式（绝大多数工具和 SDK）</li>
+<li><code>/v1/messages</code> — Anthropic Claude 格式（Claude Code 等原生接入）</li>
+<li><code>/v1/images/generations</code> — 图像生成（gpt-image 系列）</li>
+</ul>
+<div class="tabgroup"><div class="tabbar"><button class="on">cURL</button><button class="">Python</button><button class="">Node.js</button></div><div class="tabpane" style=""><div class="codewrap" style="margin:0"><pre><code>curl https://model.51a.online/v1/chat/completions \
+  -H "Authorization: Bearer sk-你的密钥" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "glm-5.2",
+    "messages": [{"role": "user", "content": "你好"}]
+  }'
+</code></pre><button class="copy" onclick="cp(this)">复制</button></div></div><div class="tabpane" style="display:none"><div class="codewrap" style="margin:0"><pre><code>from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://model.51a.online/v1",
+    api_key="sk-你的密钥",
+)
+
+resp = client.chat.completions.create(
+    model="glm-5.2",
+    messages=[{"role": "user", "content": "你好"}],
+)
+print(resp.choices[0].message.content)
+</code></pre><button class="copy" onclick="cp(this)">复制</button></div></div><div class="tabpane" style="display:none"><div class="codewrap" style="margin:0"><pre><code>import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://model.51a.online/v1",
+  apiKey: "sk-你的密钥",
+});
+
+const resp = await client.chat.completions.create({
+  model: "glm-5.2",
+  messages: [{ role: "user", content: "你好" }],
+});
+console.log(resp.choices[0].message.content);
+</code></pre><button class="copy" onclick="cp(this)">复制</button></div></div></div>
+</section>
+<section id="tools"><h2>工具接入</h2>
+<h3 id="tool-generic" style="margin-top:0">通用配置</h3>
+<p>大多数工具只需要填三项。在工具的「设置 → 模型服务 / 提供商」里新增自定义服务，协议选 <b>OpenAI 兼容（OpenAI Compatible）</b>：</p>
+<div class="tblwrap"><table><thead><tr><th>字段</th><th>填写</th></tr></thead><tbody><tr><td><td>API 地址 / Base URL</td></td><td><td class="mono">https://model.51a.online/v1</td></td></tr><tr><td><td>API Key</td></td><td><td>你创建的 <code>sk-...</code></td></td></tr><tr><td><td>模型名称</td></td><td><td>先用 <code>glm-4.6</code> 或 <code>gpt-6-luna</code> 测试</td></td></tr></tbody></table></div>
+<p>保存后新建对话，问一句"你好"，能收到回复就接好了。想换 GPT / GLM / DeepSeek，只在工具里切换模型名，<b>地址和 Key 不变</b>。</p>
+
+<h3 id="tool-cherry">Cherry Studio</h3>
+<p>打开 <b>设置 → 模型服务 → 添加提供商</b>，选择 OpenAI 兼容，按上表填三项，保存后启用模型，在聊天窗口选择刚添加的模型即可。</p>
+
+<h3 id="tool-vscode">VS Code（Cline / Roo Code 等）</h3>
+<p>提供商选 <b>OpenAI Compatible</b>，Base URL 填 <code>https://model.51a.online/v1</code>，API Key 填自己的 Key，模型名填 <code>gpt-6-luna</code> 或 <code>glm-4.6</code>。如果插件会自动拼 <code>/v1</code>，把地址改成 <code>https://model.51a.online</code>。</p>
+
+<h3 id="tool-claude">Claude Code</h3>
+<p>Claude Code 用 <b>Anthropic 兼容协议</b>，与其他工具不同：<b>Base URL 不带 <code>/v1</code></b>。</p>
+<div class="tabgroup"><div class="tabbar"><button class="on">环境变量（推荐）</button><button class="">settings.json</button></div><div class="tabpane" style=""><div class="codewrap" style="margin:0"><pre><code>export ANTHROPIC_BASE_URL=https://model.51a.online
+export ANTHROPIC_AUTH_TOKEN=sk-你的密钥
+export ANTHROPIC_MODEL=gpt-6-luna
+claude</code></pre><button class="copy" onclick="cp(this)">复制</button></div></div><div class="tabpane" style="display:none"><div class="codewrap" style="margin:0"><pre><code>{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://model.51a.online",
+    "ANTHROPIC_AUTH_TOKEN": "sk-填写你自己的Key",
+    "ANTHROPIC_MODEL": "gpt-6-luna",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "gpt-6-luna",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "gpt-6.1-terra",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.6"
+  }
+}</code></pre><button class="copy" onclick="cp(this)">复制</button></div></div></div>
+<p>用 CC Switch 管理多个供应商的用户：在 <b>CC Switch → Claude Code → 添加供应商</b> 选「自定义」（不是 Anthropic 官方），API URL 填 <code>https://model.51a.online</code>，密钥填自己的 Key，并在高级设置里核对下面的模型映射——<b>只填地址和 Key、不配四个模型映射，会出现 <code>model_not_found</code></b>：</p>
+<div class="tblwrap"><table><thead><tr><th>模型映射</th><th>示例值</th><th>用途</th></tr></thead><tbody><tr><td><td class="mono">ANTHROPIC_MODEL</td></td><td><td class="mono">gpt-6-luna</td></td><td><td>主模型</td></td></tr><tr><td><td class="mono">ANTHROPIC_DEFAULT_SONNET_MODEL</td></td><td><td class="mono">gpt-6-luna</td></td><td><td>Sonnet 档任务</td></td></tr><tr><td><td class="mono">ANTHROPIC_DEFAULT_OPUS_MODEL</td></td><td><td class="mono">gpt-6.1-terra</td></td><td><td>Opus 档任务</td></td></tr><tr><td><td class="mono">ANTHROPIC_DEFAULT_HAIKU_MODEL</td></td><td><td class="mono">glm-4.6</td></td><td><td>后台轻量任务</td></td></tr></tbody></table></div>
+<p class="note">如果你曾在终端设置过 <code>ANTHROPIC_BASE_URL</code> 等环境变量，旧值可能覆盖新配置；修改后完全退出并重新打开工具。</p>
+
+<h3 id="tool-codex">Codex CLI</h3>
+<p>Base URL 填 <code>https://model.51a.online/v1</code>，API Key 填自己的 Key，模型选 GPT 系列（复杂代码任务可从 <code>gpt-6.1-terra</code> 开始）。新版 Codex CLI 使用 <code>/v1/responses</code> 端点，如遇 <code>reasoning.context</code> 相关 400 报错，需要在配置中关闭 <code>use_responses_lite</code>——这不是 Key 无效，属于进阶配置，可参考 Codex 文档或联系我们协助。</p>
+</section>
+<section id="pick"><h2>模型怎么选</h2>
+<div class="tblwrap"><table><thead><tr><th>想做什么</th><th>先试这个模型</th><th>说明</th></tr></thead><tbody><tr><td><td>日常聊天、写文案</td></td><td><td class="mono">glm-4.6 / glm-5.2</td></td><td><td>GLM 系适合作为日常入口</td></td></tr><tr><td><td>写代码：主流 GLM</td></td><td><td class="mono">glm-5.2 / glm-5.3</td></td><td><td>两个主流模型都值得按任务试用</td></td></tr><tr><td><td>写代码：GPT 起步</td></td><td><td class="mono">gpt-6-luna</td></td><td><td>一般代码任务的性价比之选</td></td></tr><tr><td><td>写代码：复杂任务</td></td><td><td class="mono">gpt-6.1-terra</td></td><td><td>复杂代码优先从这里试</td></td></tr><tr><td><td>写代码：更强效果</td></td><td><td class="mono">gpt-6-sol / gpt-6.1-sol</td></td><td><td>需要更强效果时再切换</td></td></tr><tr><td><td>写代码：最强效果</td></td><td><td class="mono">gpt-6-astra</td></td><td><td>效果优先，更耗时、更消耗额度</td></td></tr><tr><td><td>大批量、低成本任务</td></td><td><td class="mono">deepseek-flash</td></td><td><td>谷时（夜间与周末）价格更低</td></td></tr><tr><td><td>看图、读截图</td></td><td><td class="mono">glm-4.6v</td></td><td><td>上传图片提问；"识图"不是"生图"</td></td></tr><tr><td><td>生成一张图片</td></td><td><td class="mono">gpt-image-2.5</td></td><td><td>走图像生成端点，见 SDK 章节</td></td></tr><tr><td><td>更长上下文</td></td><td><td class="mono">[1M] 后缀模型</td></td><td><td>模型名与模型广场完全一致</td></td></tr></tbody></table></div>
+<p class="note">GPT、GLM、DeepSeek 全系<b>共用一套 Key、一套网关地址</b>。完整模型清单与实时价格以控制台「模型广场」为准；个别渠道因上游额度暂时不可用时，网关会自动切换到其他可用渠道。</p>
+</section>
+<section id="billing"><h2>计费说明</h2>
+<ul class="faq">
+<li><b>计价单位</b>：按 token 用量计费，价格对齐各模型官方 API。</li>
+<li><b>缓存折扣</b>：命中提示词缓存的输入按官方缓存价计费（约为输入价的 10%），长会话/Agent 场景成本大幅降低。</li>
+<li><b>DeepSeek 分时</b>：<code>deepseek-flash</code> 系列按峰谷计价——工作日 9-12 点、14-18 点为峰值价，其余时段（含夜间与周末）为峰值 8 折。</li>
+<li><b>充值汇率</b>：按充值时页面展示的汇率结算，充值余额永不过期。</li>
+<li><b>账单透明</b>：控制台「日志」可逐条核对每次请求的 token 数与费用。</li>
+</ul>
+</section>
+<section id="faq"><h2>常见问题</h2>
+<ul class="faq">
+<li><b>支持流式输出吗？</b> 支持，所有文本模型均可 <code>stream: true</code>。</li>
+<li><b>一个密钥能换模型吗？</b> 能。密钥与模型无关，请求里改 <code>model</code> 字段即可。</li>
+<li><b>401 / Invalid token？</b> Key 复制不完整或已删除，回到控制台重新复制。</li>
+<li><b>404？</b> 地址路径不对。聊天工具用 <code>/v1</code> 结尾的地址，Claude Code 用不带 <code>/v1</code> 的根地址。</li>
+<li><b>503 model_not_found？</b> 模型名拼写与模型广场不一致（注意大小写与 <code>[1M]</code> 后缀）。</li>
+<li><b>报 429 怎么办？</b> 触发了使用限制（速率或套餐额度），稍后重试或升级套餐。</li>
+<li><b>数据安全？</b> 请求内容仅用于本次转发与计费统计，不用于训练。</li>
+</ul>
+</section>
+</main>
+</div>
+<footer>51a.online · AI Gateway — 文档更新于 2026-11</footer>
+<script>
+function cp(btn) {
+  const code = btn.parentElement.querySelector('code').innerText;
+  navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制', 1500); });
+}
+function tg(e, el) { el.parentElement.classList.toggle('open'); }
+document.querySelectorAll('.tabbar').forEach(bar => {
+  bar.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    bar.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    e.target.classList.add('on');
+    const wrap = bar.parentElement;
+    wrap.querySelectorAll('.tabpane').forEach((p, i) => p.style.display = (bar.children[i] === e.target) ? '' : 'none');
+  });
+});
+const links = document.querySelectorAll('#toc a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting) {
+      links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + en.target.id));
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+document.querySelectorAll('main section').forEach(s => obs.observe(s));
+document.querySelectorAll('.tocgroup').forEach(g => {
+  const subLinks = g.querySelectorAll('.tocsub a');
+  if (!subLinks.length) return;
+  const subObs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        subLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + en.target.id));
+        g.classList.add('open');
+      }
+    });
+  }, { rootMargin: '-25% 0px -70% 0px' });
+  subLinks.forEach(l => {
+    const t = document.querySelector(l.getAttribute('href'));
+    if (t) subObs.observe(t);
+  });
+});
+</script>
+</body>
+</html>
