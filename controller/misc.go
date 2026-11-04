@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"time"
+	"html"
+	"strings"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -238,6 +241,47 @@ func GetHomePageContent(c *gin.Context) {
 	serveRevalidatedJSON(c, homePageContent)
 }
 
+// brandedEmailBody wraps transactional email text in a branded, email-client
+// safe template (inline styles only). code renders as a highlighted box;
+// extraHTML (e.g. a reset link) renders under the greeting when present.
+func brandedEmailBody(greeting, code, validity, extraHTML string) string {
+	logo := common.Logo
+	if logo != "" && !strings.HasPrefix(logo, "http") && system_setting.ServerAddress != "" {
+		logo = strings.TrimSuffix(system_setting.ServerAddress, "/") + "/" + strings.TrimPrefix(logo, "/")
+	}
+	name := html.EscapeString(common.SystemName)
+	header := fmt.Sprintf(`<tr><td style="padding:28px 32px 6px;font-size:17px;font-weight:700;color:#1a1d23;">%s</td></tr>`, name)
+	if logo != "" {
+		header = fmt.Sprintf(`<tr><td style="padding:28px 32px 6px;">
+<img src="%s" width="34" height="34" alt="" style="border-radius:8px;vertical-align:middle;">
+<span style="font-size:16px;font-weight:700;color:#1a1d23;vertical-align:middle;margin-left:10px;">%s</span>
+</td></tr>`, logo, name)
+	}
+	codeBox := ""
+	if code != "" {
+		codeBox = fmt.Sprintf(`<tr><td style="padding:10px 32px 4px;">
+<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:18px;text-align:center;font-size:24px;letter-spacing:8px;font-weight:700;color:#4f46e5;font-family:ui-monospace,Menlo,Consolas,monospace;">%s</div>
+</td></tr>`, html.EscapeString(code))
+	}
+	extraRow := ""
+	if extraHTML != "" {
+		extraRow = fmt.Sprintf(`<tr><td style="padding:10px 32px 0;font-size:14px;color:#1a1d23;line-height:1.8;">%s</td></tr>`, extraHTML)
+	}
+	validityRow := ""
+	if validity != "" {
+		validityRow = fmt.Sprintf(`<tr><td style="padding:12px 32px 26px;font-size:13px;color:#6b7280;line-height:1.7;">%s</td></tr>`, validity)
+	}
+	return fmt.Sprintf(`<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f4f5f7;font-family:-apple-system,'PingFang SC','Segoe UI','Microsoft YaHei',sans-serif;">
+<table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
+%s
+<tr><td style="padding:14px 32px 4px;font-size:14px;color:#1a1d23;line-height:1.8;">%s</td></tr>
+%s
+%s
+%s
+<tr><td style="padding:16px 32px;border-top:1px solid #eef0f3;font-size:12px;color:#9ca3af;">© %d 51a.online · AI Gateway — 系统自动发送，请勿直接回复。</td></tr>
+</table></body></html>`, header, greeting, codeBox, extraRow, validityRow, time.Now().Year())
+}
+
 func SendEmailVerification(c *gin.Context) {
 	email, err := service.ValidateAccountEmail(c.Query("email"))
 	if err != nil {
@@ -255,12 +299,11 @@ func SendEmailVerification(c *gin.Context) {
 	// request language.
 	systemName := map[string]any{"SystemName": common.SystemName}
 	subject := i18n.T(c, i18n.MsgEmailVerificationSubject, systemName)
-	content := fmt.Sprintf("<p>%s</p>"+
-		"<p>%s</p>"+
-		"<p>%s</p>",
+	content := brandedEmailBody(
 		i18n.T(c, i18n.MsgEmailVerificationGreeting, systemName),
-		i18n.T(c, i18n.MsgEmailVerificationCode, map[string]any{"Code": code}),
-		i18n.T(c, i18n.MsgEmailVerificationValidity, map[string]any{"Minutes": common.VerificationValidMinutes}))
+		code,
+		i18n.T(c, i18n.MsgEmailVerificationValidity, map[string]any{"Minutes": common.VerificationValidMinutes}),
+		"")
 	err = common.SendEmail(subject, email, content)
 	if err != nil {
 		common.ApiError(c, err)
@@ -290,14 +333,11 @@ func SendPasswordResetEmail(c *gin.Context) {
 		systemName := map[string]any{"SystemName": common.SystemName}
 		linkParams := map[string]any{"Link": link}
 		subject := i18n.Translate(lang, i18n.MsgEmailPasswordResetSubject, systemName)
-		content := fmt.Sprintf("<p>%s</p>"+
-			"<p>%s</p>"+
-			"<p>%s </p>"+
-			"<p>%s</p>",
+		content := brandedEmailBody(
 			i18n.Translate(lang, i18n.MsgEmailPasswordResetGreeting, systemName),
-			i18n.Translate(lang, i18n.MsgEmailPasswordResetLink, linkParams),
-			i18n.Translate(lang, i18n.MsgEmailPasswordResetLinkFallback, linkParams),
-			i18n.Translate(lang, i18n.MsgEmailPasswordResetValidity, map[string]any{"Minutes": common.VerificationValidMinutes}))
+			"",
+			i18n.Translate(lang, i18n.MsgEmailPasswordResetValidity, map[string]any{"Minutes": common.VerificationValidMinutes}),
+			i18n.Translate(lang, i18n.MsgEmailPasswordResetLink, linkParams)+"<br>"+i18n.Translate(lang, i18n.MsgEmailPasswordResetLinkFallback, linkParams))
 		err := common.SendEmail(subject, email, content)
 		if err != nil {
 			logger.LogError(c.Request.Context(), common.LogText("failed to send password reset email to %s: %s", email, err.Error()))
