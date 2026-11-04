@@ -229,3 +229,56 @@ func rateLimitCapacity(count int, durationSeconds int64) int64 {
 	}
 	return c * durationSeconds
 }
+
+// EnforceGroupModelRequestRateLimit applies per-group per-model request caps
+// once the requested model name is known. It is called from Distribute before
+// channel selection, which is the first point where the model is parsed.
+// Unlike the group-level limiter it counts every request (no success-only
+// sub-counter) because the outcome is not known at check time.
+// Returns false when the request has been aborted (429 or 500).
+func EnforceGroupModelRequestRateLimit(c *gin.Context, modelName string) bool {
+	if !setting.ModelRequestRateLimitEnabled || modelName == "" {
+		return true
+	}
+	group := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
+	if group == "" {
+		group = common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+	}
+	if group == "" {
+		return true
+	}
+	maxCount, found := setting.GetGroupModelRateLimit(group, modelName)
+	if !found || maxCount <= 0 {
+		return true
+	}
+	duration := rateLimitDurationSeconds(setting.ModelRequestRateLimitDurationMinutes)
+	subject := fmt.Sprintf("%d:%s:%s", c.GetInt("id"), group, modelName)
+	if common.RedisEnabled {
+		ctx := context.Background()
+		totalKey := fmt.Sprintf("rateLimit:%s:%s", ModelRequestRateLimitCountMark, subject)
+		tb := limiter.New(ctx, common.RDB)
+		allowed, err := tb.Allow(
+			ctx,
+			totalKey,
+			limiter.WithCapacity(rateLimitCapacity(maxCount, duration)),
+			limiter.WithRate(int64(maxCount)),
+			limiter.WithRequested(duration),
+		)
+		if err != nil {
+			common.SysLog(common.LogText("failed to check the group-model request limit: %s", err.Error()))
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, "rate_limit_check_failed")
+			return false
+		}
+		if !allowed {
+			abortWithOpenAiMessage(c, http.StatusTooManyRequests, i18n.T(c, i18n.MsgRateLimitTotalReached, map[string]any{"Minutes": setting.ModelRequestRateLimitDurationMinutes, "Max": maxCount}))
+			return false
+		}
+		return true
+	}
+	totalKey := ModelRequestRateLimitCountMark + subject
+	if !inMemoryRateLimiter.Request(totalKey, maxCount, duration) {
+		abortWithOpenAiMessage(c, http.StatusTooManyRequests, i18n.T(c, i18n.MsgRateLimitTotalReached, map[string]any{"Minutes": setting.ModelRequestRateLimitDurationMinutes, "Max": maxCount}))
+		return false
+	}
+	return true
+}

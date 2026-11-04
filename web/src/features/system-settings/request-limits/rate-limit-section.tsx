@@ -78,6 +78,12 @@ const createRateLimitSchema = (t: (key: string) => string) =>
       .refine(isValidJSON, {
         message: t('Invalid JSON format or values out of allowed range'),
       }),
+    ModelRequestRateLimitGroupModel: z
+      .string()
+      .optional()
+      .refine(isValidJSON, {
+        message: t('Invalid JSON format or values out of allowed range'),
+      }),
   })
 
 type RateLimitFormValues = z.infer<ReturnType<typeof createRateLimitSchema>>
@@ -313,6 +319,50 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                     </div>
                   </FormDescription>
                 )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='ModelRequestRateLimitGroupModel'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Group per-model rate limits')}</FormLabel>
+                <FormControl>
+                  <JsonCodeEditor
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    textareaRef={field.ref}
+                    placeholder={`{\n  "sub199": {\n    "gpt-6-sol": 40\n  }\n}`}
+                    aria-invalid={Boolean(
+                      form.formState.errors.ModelRequestRateLimitGroupModel
+                    )}
+                  />
+                </FormControl>
+                <FormDescription>
+                  <div className='space-y-1 text-xs'>
+                    <p className='font-semibold'>{t('Format:')}</p>
+                    <ul className='list-inside list-disc space-y-0.5 pl-2'>
+                      <li>
+                        {t('JSON object:')}{' '}
+                        {`{"groupName": {"modelName": maxRequests}}`}
+                      </li>
+                      <li>
+                        {t('Example:')}{' '}
+                        {`{"sub199": {"gpt-6-sol": 40, "gpt-6-astra": 15}}`}
+                      </li>
+                      <li>
+                        {t(
+                          'Caps requests per group AND per model over the same period; counts every request'
+                        )}
+                      </li>
+                    </ul>
+                  </div>
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
