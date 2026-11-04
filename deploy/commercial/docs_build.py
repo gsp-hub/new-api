@@ -289,6 +289,15 @@ td.desc {{ color: var(--fg2); font-size: 13px; max-width: 380px; }}
 .copy {{ position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.12); color: #cbd5e1; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }}
 .copy:hover {{ background: rgba(255,255,255,.22); }}
 footer {{ text-align: center; color: var(--fg2); font-size: 13px; padding: 30px 0 50px; }}
+.topnav {{ position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 28px; padding: 0 32px; height: 56px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }}
+.topnav .brand {{ font-weight: 700; font-size: 15px; color: var(--fg); letter-spacing: -.2px; }}
+.topnav .brand span {{ color: var(--acc); }}
+.topnav .tlinks {{ display: flex; gap: 4px; margin-left: auto; }}
+.topnav .tlinks a {{ color: var(--fg2); font-size: 14px; padding: 6px 14px; border-radius: 8px; }}
+.topnav .tlinks a:hover {{ color: var(--fg); background: var(--bg2); text-decoration: none; }}
+.topnav .tlinks a.active {{ color: var(--acc); background: var(--accbg); font-weight: 500; }}
+.topnav .console {{ margin-left: 12px; background: var(--acc); color: #fff !important; border-radius: 8px; padding: 6px 16px !important; font-weight: 500; }}
+.topnav .console:hover {{ opacity: .88; background: var(--acc); }}
 .tocgroup .tocparent {{ display: flex; justify-content: space-between; align-items: center; }}
 .chev {{ display: inline-block; transition: transform .2s; color: var(--fg2); font-size: 15px; }}
 .tocgroup.open .chev {{ transform: rotate(90deg); }}
@@ -299,6 +308,16 @@ footer {{ text-align: center; color: var(--fg2); font-size: 13px; padding: 30px 
 </style>
 </head>
 <body>
+<nav class="topnav">
+  <a class="brand" href="/">51a<span>.online</span></a>
+  <div class="tlinks">
+    <a href="/">首页</a>
+    <a href="/pricing">模型广场</a>
+    <a href="/docs" class="active">文档</a>
+    <a href="/about">关于</a>
+    <a href="/dashboard" class="console">控制台</a>
+  </div>
+</nav>
 <header class="hero"><div class="in">
 <h1>51a Online · AI API 文档</h1>
 <p>一个密钥访问 GPT / GLM / DeepSeek —— 官方协议兼容，按量计费，缓存享折扣</p>
