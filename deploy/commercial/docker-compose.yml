@@ -3,7 +3,7 @@ name: newapi-commercial
 services:
   new-api:
     build:
-      context: ..
+      context: ../..
       dockerfile: Dockerfile
     image: newapi-commercial:latest
     container_name: newapi-commercial
