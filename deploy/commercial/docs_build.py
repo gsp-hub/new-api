@@ -158,9 +158,24 @@ sections.append(('tools', '工具接入', f'''
 <h3 id="tool-claude">Claude Code</h3>
 <p>Claude Code 用 <b>Anthropic 兼容协议</b>，与其他工具不同：<b>Base URL 不带 <code>/v1</code></b>。</p>
 {tabs_block([('环境变量（推荐）', claude_env), ('settings.json', claude_json)])}
-<p>用 CC Switch 管理多个供应商的用户：在 <b>CC Switch → Claude Code → 添加供应商</b> 选「自定义」（不是 Anthropic 官方），API URL 填 <code>{BASE}</code>，密钥填自己的 Key，并在高级设置里核对下面的模型映射——<b>只填地址和 Key、不配四个模型映射，会出现 <code>model_not_found</code></b>：</p>
+<p>用 CC Switch 管理配置的用户请看下一节「CC Switch」，配置更直观。</p>
+
+
 {cc_tbl}
 <p class="note">如果你曾在终端设置过 <code>ANTHROPIC_BASE_URL</code> 等环境变量，旧值可能覆盖新配置；修改后完全退出并重新打开工具。</p>
+
+<h3 id="tool-ccswitch">CC Switch（推荐：多供应商管理）</h3>
+<p>CC Switch 是管理 API 供应商配置的桌面工具，可以保存多套网关配置并一键切换——Claude Code 和 Codex 都能用它管理，是最省心的接入方式。从 <a href="https://ccswitch.io" target="_blank" rel="noopener noreferrer">ccswitch.io</a> 下载安装。</p>
+<ol class="steps">
+<li><b>添加供应商</b>：打开 CC Switch → Claude Code 页签 → 添加供应商 → 选<b>自定义</b>（不是 Anthropic 官方）。名称随意（如 51a），API URL 填 <code>{BASE}</code>，密钥填自己的 <code>sk-...</code>。</li>
+<li><b>配置模型映射</b>：在该供应商的<b>高级设置 / 环境变量</b>里核对下面四项——<b>只填地址和 Key、不配这四个映射，Claude Code 会报 <code>model_not_found</code></b>：</li>
+</ol>
+{cc_tbl}
+<ol class="steps" start="3">
+<li><b>启用</b>：保存后点启用/应用，完全退出并重新打开 Claude Code，<code>/status</code> 里确认当前模型。</li>
+<li><b>Codex 用户</b>：切到 CC Switch 的 <b>Codex 页签</b>（与 Claude Code 是两套独立配置）→ 添加自定义供应商 → Base URL 填 <code>{BASE}/v1</code> + Key + 模型名即可。</li>
+</ol>
+<p class="note">如果之前在终端手动 export 过 <code>ANTHROPIC_BASE_URL</code> 等变量，旧值会覆盖 CC Switch 的配置——先清理旧环境变量再重启工具。不想装工具的，直接用上面 Claude Code 的环境变量/settings.json 方式，效果相同。</p>
 
 <h3 id="tool-codex">Codex CLI</h3>
 <p>Base URL 填 <code>{BASE}/v1</code>，API Key 填自己的 Key，模型选 GPT 系列（复杂代码任务可从 <code>gpt-6.1-terra</code> 开始）。新版 Codex CLI 使用 <code>/v1/responses</code> 端点，如遇 <code>reasoning.context</code> 相关 400 报错，需要在配置中关闭 <code>use_responses_lite</code>——这不是 Key 无效，属于进阶配置，可参考 Codex 文档或联系我们协助。</p>
@@ -213,6 +228,7 @@ TOC_SUBS = {
         ('tool-cherry', 'Cherry Studio'),
         ('tool-vscode', 'VS Code 插件'),
         ('tool-claude', 'Claude Code'),
+        ('tool-ccswitch', 'CC Switch'),
         ('tool-codex', 'Codex CLI'),
     ],
 }
