@@ -32,13 +32,19 @@ export function useTurnstile() {
   const isTurnstileEnabled = !!(
     status?.turnstile_check && status?.turnstile_site_key
   )
+  const isTurnstileLoginEnabled = !!(
+    status?.turnstile_check &&
+    status?.turnstile_login_check &&
+    status?.turnstile_site_key
+  )
   const turnstileSiteKey = status?.turnstile_site_key || ''
 
   /**
    * Validate if turnstile is ready when required
    */
-  const validateTurnstile = (): boolean => {
-    if (isTurnstileEnabled && !turnstileToken) {
+  const validateTurnstile = (loginScope = false): boolean => {
+    const required = loginScope ? isTurnstileLoginEnabled : isTurnstileEnabled
+    if (required && !turnstileToken) {
       toast.info(
         i18next.t('Please wait a moment, human check is initializing...')
       )
@@ -49,6 +55,7 @@ export function useTurnstile() {
 
   return {
     isTurnstileEnabled,
+    isTurnstileLoginEnabled,
     turnstileSiteKey,
     turnstileToken,
     setTurnstileToken,

@@ -14,6 +14,10 @@ type turnstileCheckResponse struct {
 
 func TurnstileCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if !common.TurnstileCheckOnLoginEnabled && c.Request.URL.Path == "/api/user/login" {
+			c.Next()
+			return
+		}
 		if common.TurnstileCheckEnabled {
 			response := c.Query("turnstile")
 			if response == "" {

@@ -96,7 +96,7 @@ export function UserAuthForm({
       status?.data?.password_login_encryption_enabled ??
       false) === true
   const {
-    isTurnstileEnabled,
+    isTurnstileLoginEnabled,
     turnstileSiteKey,
     turnstileToken,
     setTurnstileToken,
@@ -165,10 +165,10 @@ export function UserAuthForm({
       return
     }
 
-    if (!validateTurnstile()) return
+    if (!validateTurnstile(true)) return
 
     const submittedTurnstileToken = turnstileToken
-    if (isTurnstileEnabled) {
+    if (isTurnstileLoginEnabled) {
       setTurnstileToken('')
       setTurnstileWidgetKey((current) => current + 1)
     }
@@ -406,7 +406,7 @@ export function UserAuthForm({
             </Button>
 
             {/* Turnstile */}
-            {isTurnstileEnabled && (
+            {isTurnstileLoginEnabled && (
               <div className='mt-2'>
                 <Turnstile
                   key={turnstileWidgetKey}
