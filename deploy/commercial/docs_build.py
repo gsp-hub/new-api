@@ -8,61 +8,14 @@ BASE = 'https://model.51a.online'
 def price(x):
     return f"${x:g}"
 
-def model_rows():
-    rows = []
-    for m in sorted(D, key=lambda x: x['model_name']):
-        name = m['model_name']
-        if name.endswith('[1M]'):
-            continue
-        desc = (m.get('description') or '').strip()
-        # drop trailing price sentence, keep guidance
-        desc = re.sub(r'价格 in[^。]*。?\s*$', '', desc).strip()
-        if m.get('quota_type') == 1:
-            inout = f"{price(m['model_price'])} / 次"
-        else:
-            r = m['model_ratio'] * 2
-            c = r * (m.get('completion_ratio') or 1)
-            inout = f"{price(r)} / {price(c)}"
-        vendor = ''
-        vmap = [('gpt', 'GPT'), ('glm', 'GLM'), ('deepseek', 'DeepSeek')]
-        for k, label in vmap:
-            if name.startswith(k):
-                vendor = label
-        rows.append((vendor, name, inout, desc))
-    return rows
-
-VENDOR_ORDER = ['GPT', 'GLM', 'DeepSeek']
-
-def table_html():
-    out = []
-    for vendor in VENDOR_ORDER:
-        rows = [r for r in model_rows() if r[0] == vendor]
-        if not rows:
-            continue
-        out.append(f'<h3 class="mvendor">{vendor}</h3>')
-        out.append('<div class="tblwrap"><table><thead><tr><th>模型</th><th>输入 / 输出（$/1M tokens）</th><th>适用场景</th></tr></thead><tbody>')
-        for _, name, inout, desc in rows:
-            flag = ' <span class="tag">分时</span>' if 'flash' in name and 'deepseek' in name else ''
-            out.append(f'<tr><td class="mono">{html.escape(name)}{flag}</td><td class="mono">{inout}</td><td class="desc">{html.escape(desc)}</td></tr>')
-        out.append('</tbody></table></div>')
-    return '\n'.join(out)
-
-code_blocks = {}
-
-def code(lang, body):
-    bid = f"c{len(code_blocks)}"
-    code_blocks[bid] = (lang, body)
-    return bid
-
-# ---------- content sections ----------
 def esc_h(s):
     return s.replace('&', '&amp;').replace('<', '&lt;')
 
-def single_code(lang, body):
+def single_code(body):
     return ('<div class="codewrap"><pre class="plain"><code>' + esc_h(body) + '</code></pre>'
             '<button class="copy" onclick="cp(this)">复制</button></div>')
 
-def tabs_block(group, items):
+def tabs_block(items):
     bars = ''.join(f'<button class="{"on" if i == 0 else ""}">{esc_h(t)}</button>' for i, (t, _) in enumerate(items))
     panes = ''.join(
         f'<div class="tabpane" style="{"display:none" if i else ""}"><div class="codewrap" style="margin:0"><pre><code>{esc_h(b)}</code></pre>'
@@ -70,23 +23,56 @@ def tabs_block(group, items):
         for i, (_, b) in enumerate(items))
     return f'<div class="tabgroup"><div class="tabbar">{bars}</div>{panes}</div>'
 
+def table(headers, rows):
+    h = ''.join(f'<th>{x}</th>' for x in headers)
+    body = ''.join('<tr>' + ''.join(f'<td>{c}</td>' for c in r) + '</tr>' for r in rows)
+    return f'<div class="tblwrap"><table><thead><tr>{h}</tr></thead><tbody>{body}</tbody></table></div>'
+
+def model_tables():
+    out = []
+    for vendor, label in [('gpt', 'GPT'), ('glm', 'GLM'), ('deepseek', 'DeepSeek')]:
+        rows = []
+        for m in sorted(D, key=lambda x: x['model_name']):
+            name = m['model_name']
+            if name.endswith('[1M]') or not name.startswith(vendor):
+                continue
+            desc = (m.get('description') or '').strip()
+            desc = re.sub(r'价格 in[^。]*。?\s*$', '', desc).strip()
+            if m.get('quota_type') == 1:
+                inout = f"{price(m['model_price'])} / 次"
+            else:
+                r = m['model_ratio'] * 2
+                c = r * (m.get('completion_ratio') or 1)
+                inout = f"{price(r)} / {price(c)}"
+            flag = ' <span class="tag">分时</span>' if vendor == 'deepseek' and 'flash' in name else ''
+            rows.append((f'<td class="mono">{html.escape(name)}{flag}</td>', f'<td class="mono">{inout}</td>',
+                         f'<td class="desc">{html.escape(desc)}</td>'))
+        if rows:
+            out.append(f'<h3 class="mvendor">{label}</h3>')
+            out.append(table(['模型', '输入 / 输出（$/1M tokens）', '适用场景'], rows))
+    return '\n'.join(out)
+
 sections = []
 
+# ---------------- 1 快速开始 ----------------
 sections.append(('quickstart', '快速开始', f'''
 <p>三步开始使用：</p>
 <ol class="steps">
 <li><b>注册并登录</b> — 在 <a href="{BASE}/register" target="_blank">注册页</a>创建账号（需邮箱验证）。</li>
 <li><b>创建 API Key</b> — 控制台「令牌」页新建令牌，复制 <code>sk-...</code> 开头的密钥。</li>
-<li><b>发起第一个请求</b> — Base URL 固定为 <code>{BASE}/v1</code>，与 OpenAI SDK 完全兼容。</li>
+<li><b>选工具照着填</b> — 见下方「工具接入」章节，地址和 Key 全站通用。</li>
 </ol>
+<p>核心信息只有两样：<b>Base URL</b> = <code>{BASE}</code>，<b>API Key</b> = 你的 <code>sk-...</code>。</p>
 '''))
 
+# ---------------- 2 模型与价格 ----------------
 sections.append(('models', '模型与价格', f'''
 <p>以下为当前在售模型，价格对齐官方 API。标注 <span class="tag">分时</span> 的模型按峰谷计费（详见计费说明）。</p>
-{table_html()}
+{model_tables()}
 <p class="note">模型名加 <code>[1M]</code> 后缀（如 <code>glm-5.2[1M]</code>）表示超长上下文版本，适合 27 万 token 以上的请求，超长部分按官方阶梯价计费。</p>
 '''))
 
+# ---------------- 3 SDK 调用 ----------------
 curl_first = f'''curl {BASE}/v1/chat/completions \\
   -H "Authorization: Bearer sk-你的密钥" \\
   -H "Content-Type: application/json" \\
@@ -121,28 +107,84 @@ const resp = await client.chat.completions.create({
 });
 console.log(resp.choices[0].message.content);
 '''
-
-sections.append(('clients', '客户端接入', f'''
+sections.append(('sdk', 'SDK 调用', f'''
 <p>网关同时兼容三种协议，同一密钥通用：</p>
 <ul class="proto">
-<li><code>/v1/chat/completions</code> — OpenAI Chat 格式</li>
+<li><code>/v1/chat/completions</code> — OpenAI Chat 格式（绝大多数工具和 SDK）</li>
 <li><code>/v1/messages</code> — Anthropic Claude 格式（Claude Code 等原生接入）</li>
 <li><code>/v1/images/generations</code> — 图像生成（gpt-image 系列）</li>
 </ul>
-{tabs_block('first', [('cURL', curl_first), ('Python', py_first), ('Node.js', node_first)])}
-<h3>Claude Code</h3>
-{single_code('bash', f'''# 环境变量方式（推荐）
-export ANTHROPIC_BASE_URL={BASE}
-export ANTHROPIC_AUTH_TOKEN=sk-你的密钥
-export ANTHROPIC_MODEL=glm-5.2
-claude''')}
-<h3>Codex CLI / 其他 OpenAI 兼容客户端</h3>
-{single_code('bash', f'''# 任何支持自定义 base_url 的工具
-Base URL: {BASE}/v1
-API Key:  sk-你的密钥
-Model:    按需选择，如 gpt-6-sol / glm-5.2 / deepseek-flash''')}
+{tabs_block([('cURL', curl_first), ('Python', py_first), ('Node.js', node_first)])}
 '''))
 
+# ---------------- 4 工具接入 ----------------
+generic_tbl = table(['字段', '填写'], [
+    ('<td>API 地址 / Base URL</td>', f'<td class="mono">{BASE}/v1</td>'),
+    ('<td>API Key</td>', '<td>你创建的 <code>sk-...</code></td>'),
+    ('<td>模型名称</td>', '<td>先用 <code>glm-4.6</code> 或 <code>gpt-6-luna</code> 测试</td>'),
+])
+cc_tbl = table(['模型映射', '示例值', '用途'], [
+    ('<td class="mono">ANTHROPIC_MODEL</td>', '<td class="mono">gpt-6-luna</td>', '<td>主模型</td>'),
+    ('<td class="mono">ANTHROPIC_DEFAULT_SONNET_MODEL</td>', '<td class="mono">gpt-6-luna</td>', '<td>Sonnet 档任务</td>'),
+    ('<td class="mono">ANTHROPIC_DEFAULT_OPUS_MODEL</td>', '<td class="mono">gpt-6.1-terra</td>', '<td>Opus 档任务</td>'),
+    ('<td class="mono">ANTHROPIC_DEFAULT_HAIKU_MODEL</td>', '<td class="mono">glm-4.6</td>', '<td>后台轻量任务</td>'),
+])
+claude_json = f'''{{
+  "env": {{
+    "ANTHROPIC_BASE_URL": "{BASE}",
+    "ANTHROPIC_AUTH_TOKEN": "sk-填写你自己的Key",
+    "ANTHROPIC_MODEL": "gpt-6-luna",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "gpt-6-luna",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "gpt-6.1-terra",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.6"
+  }}
+}}'''
+claude_env = f'''export ANTHROPIC_BASE_URL={BASE}
+export ANTHROPIC_AUTH_TOKEN=sk-你的密钥
+export ANTHROPIC_MODEL=gpt-6-luna
+claude'''
+
+sections.append(('tools', '工具接入', f'''
+<p>大多数工具只需要填三项。在工具的「设置 → 模型服务 / 提供商」里新增自定义服务，协议选 <b>OpenAI 兼容（OpenAI Compatible）</b>：</p>
+{generic_tbl}
+<p>保存后新建对话，问一句"你好"，能收到回复就接好了。想换 GPT / GLM / DeepSeek，只在工具里切换模型名，<b>地址和 Key 不变</b>。</p>
+
+<h3>Cherry Studio</h3>
+<p>打开 <b>设置 → 模型服务 → 添加提供商</b>，选择 OpenAI 兼容，按上表填三项，保存后启用模型，在聊天窗口选择刚添加的模型即可。</p>
+
+<h3>VS Code（Cline / Roo Code 等）</h3>
+<p>提供商选 <b>OpenAI Compatible</b>，Base URL 填 <code>{BASE}/v1</code>，API Key 填自己的 Key，模型名填 <code>gpt-6-luna</code> 或 <code>glm-4.6</code>。如果插件会自动拼 <code>/v1</code>，把地址改成 <code>{BASE}</code>。</p>
+
+<h3>Claude Code</h3>
+<p>Claude Code 用 <b>Anthropic 兼容协议</b>，与其他工具不同：<b>Base URL 不带 <code>/v1</code></b>。</p>
+{tabs_block([('环境变量（推荐）', claude_env), ('settings.json', claude_json)])}
+<p>用 CC Switch 管理多个供应商的用户：在 <b>CC Switch → Claude Code → 添加供应商</b> 选「自定义」（不是 Anthropic 官方），API URL 填 <code>{BASE}</code>，密钥填自己的 Key，并在高级设置里核对下面的模型映射——<b>只填地址和 Key、不配四个模型映射，会出现 <code>model_not_found</code></b>：</p>
+{cc_tbl}
+<p class="note">如果你曾在终端设置过 <code>ANTHROPIC_BASE_URL</code> 等环境变量，旧值可能覆盖新配置；修改后完全退出并重新打开工具。</p>
+
+<h3>Codex CLI</h3>
+<p>Base URL 填 <code>{BASE}/v1</code>，API Key 填自己的 Key，模型选 GPT 系列（复杂代码任务可从 <code>gpt-6.1-terra</code> 开始）。新版 Codex CLI 使用 <code>/v1/responses</code> 端点，如遇 <code>reasoning.context</code> 相关 400 报错，需要在配置中关闭 <code>use_responses_lite</code>——这不是 Key 无效，属于进阶配置，可参考 Codex 文档或联系我们协助。</p>
+'''))
+
+# ---------------- 5 模型怎么选 ----------------
+pick_tbl = table(['想做什么', '先试这个模型', '说明'], [
+    ('<td>日常聊天、写文案</td>', '<td class="mono">glm-4.6 / glm-5.2</td>', '<td>GLM 系适合作为日常入口</td>'),
+    ('<td>写代码：主流 GLM</td>', '<td class="mono">glm-5.2 / glm-5.3</td>', '<td>两个主流模型都值得按任务试用</td>'),
+    ('<td>写代码：GPT 起步</td>', '<td class="mono">gpt-6-luna</td>', '<td>一般代码任务的性价比之选</td>'),
+    ('<td>写代码：复杂任务</td>', '<td class="mono">gpt-6.1-terra</td>', '<td>复杂代码优先从这里试</td>'),
+    ('<td>写代码：更强效果</td>', '<td class="mono">gpt-6-sol / gpt-6.1-sol</td>', '<td>需要更强效果时再切换</td>'),
+    ('<td>写代码：最强效果</td>', '<td class="mono">gpt-6-astra</td>', '<td>效果优先，更耗时、更消耗额度</td>'),
+    ('<td>大批量、低成本任务</td>', '<td class="mono">deepseek-flash</td>', '<td>谷时（夜间与周末）价格更低</td>'),
+    ('<td>看图、读截图</td>', '<td class="mono">glm-4.6v</td>', '<td>上传图片提问；"识图"不是"生图"</td>'),
+    ('<td>生成一张图片</td>', '<td class="mono">gpt-image-2.5</td>', '<td>走图像生成端点，见 SDK 章节</td>'),
+    ('<td>更长上下文</td>', '<td class="mono">[1M] 后缀模型</td>', '<td>模型名与模型广场完全一致</td>'),
+])
+sections.append(('pick', '模型怎么选', f'''
+{pick_tbl}
+<p class="note">GPT、GLM、DeepSeek 全系<b>共用一套 Key、一套网关地址</b>。完整模型清单与实时价格以控制台「模型广场」为准；个别渠道因上游额度暂时不可用时，网关会自动切换到其他可用渠道。</p>
+'''))
+
+# ---------------- 6 计费说明 ----------------
 sections.append(('billing', '计费说明', f'''
 <ul class="faq">
 <li><b>计价单位</b>：按 token 用量计费，价格对齐各模型官方 API。</li>
@@ -153,16 +195,20 @@ sections.append(('billing', '计费说明', f'''
 </ul>
 '''))
 
+# ---------------- 7 FAQ ----------------
 sections.append(('faq', '常见问题', '''
 <ul class="faq">
 <li><b>支持流式输出吗？</b> 支持，所有文本模型均可 <code>stream: true</code>。</li>
 <li><b>一个密钥能换模型吗？</b> 能。密钥与模型无关，请求里改 <code>model</code> 字段即可。</li>
-<li><b>想用 Claude 格式（/v1/messages）？</b> 直接调用即可，网关自动做协议转换，包括工具调用与思考块。</li>
+<li><b>401 / Invalid token？</b> Key 复制不完整或已删除，回到控制台重新复制。</li>
+<li><b>404？</b> 地址路径不对。聊天工具用 <code>/v1</code> 结尾的地址，Claude Code 用不带 <code>/v1</code> 的根地址。</li>
+<li><b>503 model_not_found？</b> 模型名拼写与模型广场不一致（注意大小写与 <code>[1M]</code> 后缀）。</li>
 <li><b>报 429 怎么办？</b> 触发了使用限制（速率或套餐额度），稍后重试或升级套餐。</li>
 <li><b>数据安全？</b> 请求内容仅用于本次转发与计费统计，不用于训练。</li>
 </ul>
 '''))
 
+# ---------------- page ----------------
 html_doc = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -244,7 +290,6 @@ function cp(btn) {{
   const code = btn.parentElement.querySelector('code').innerText;
   navigator.clipboard.writeText(code).then(() => {{ btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制', 1500); }});
 }}
-// tab switching
 document.querySelectorAll('.tabbar').forEach(bar => {{
   bar.addEventListener('click', e => {{
     if (e.target.tagName !== 'BUTTON') return;
@@ -254,7 +299,6 @@ document.querySelectorAll('.tabbar').forEach(bar => {{
     wrap.querySelectorAll('.tabpane').forEach((p, i) => p.style.display = (bar.children[i] === e.target) ? '' : 'none');
   }});
 }});
-// scrollspy
 const links = document.querySelectorAll('#toc a');
 const obs = new IntersectionObserver(entries => {{
   entries.forEach(en => {{
@@ -269,4 +313,4 @@ document.querySelectorAll('main section').forEach(s => obs.observe(s));
 </html>'''
 
 open('/tmp/commdocs/index.html', 'w').write(html_doc)
-print('written', len(html_doc))
+print('written', len(html_doc), 'bytes,', sum(s.count('<tr>') for s in [html_doc]) , 'rows')
