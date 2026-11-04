@@ -174,7 +174,6 @@ pick_tbl = table(['想做什么', '先试这个模型', '说明'], [
     ('<td>写代码：复杂任务</td>', '<td class="mono">gpt-6.1-terra</td>', '<td>复杂代码优先从这里试</td>'),
     ('<td>写代码：更强效果</td>', '<td class="mono">gpt-6-sol / gpt-6.1-sol</td>', '<td>需要更强效果时再切换</td>'),
     ('<td>写代码：最强效果</td>', '<td class="mono">gpt-6-astra</td>', '<td>效果优先，更耗时、更消耗额度</td>'),
-    ('<td>大批量、低成本任务</td>', '<td class="mono">deepseek-flash</td>', '<td>谷时（夜间与周末）价格更低</td>'),
     ('<td>看图、读截图</td>', '<td class="mono">glm-4.6v</td>', '<td>上传图片提问；"识图"不是"生图"</td>'),
     ('<td>生成一张图片</td>', '<td class="mono">gpt-image-2.5</td>', '<td>走图像生成端点，见 SDK 章节</td>'),
     ('<td>更长上下文</td>', '<td class="mono">[1M] 后缀模型</td>', '<td>模型名与模型广场完全一致</td>'),
@@ -189,7 +188,7 @@ sections.append(('billing', '计费说明', f'''
 <ul class="faq">
 <li><b>计价单位</b>：按 token 用量计费，价格对齐各模型官方 API。</li>
 <li><b>缓存折扣</b>：命中提示词缓存的输入按官方缓存价计费（约为输入价的 10%），长会话/Agent 场景成本大幅降低。</li>
-<li><b>DeepSeek 分时</b>：<code>deepseek-flash</code> 系列按峰谷计价——工作日 9-12 点、14-18 点为峰值价，其余时段（含夜间与周末）为峰值 8 折。</li>
+<li><b>分时计价</b>：个别模型（详见价格表标注）在工作日 9-12 点、14-18 点按峰值价计费，其余时段 8 折。</li>
 <li><b>充值汇率</b>：按充值时页面展示的汇率结算，充值余额永不过期。</li>
 <li><b>账单透明</b>：控制台「日志」可逐条核对每次请求的 token 数与费用。</li>
 </ul>
@@ -235,6 +234,7 @@ html_doc = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<script>(function(){{try{{var m=localStorage.getItem('newapi:theme:v1:mode');if(m==='light'||m==='dark'){{document.documentElement.dataset.theme=m;}}}}catch(e){{}}}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>51a Online · AI API 文档</title>
 <style>
@@ -243,9 +243,8 @@ html_doc = f'''<!DOCTYPE html>
   --line: #e5e7eb; --acc: #4f46e5; --accbg: #eef2ff;
   --code-bg: #0f172a; --code-fg: #e2e8f0;
 }}
-@media (prefers-color-scheme: dark) {{
-  :root {{ --bg: #0f1115; --bg2: #16181e; --fg: #e6e8ec; --fg2: #9aa1ad; --line: #262a33; --acc: #818cf8; --accbg: #1e1b4b; --code-bg: #020617; }}
-}}
+:root[data-theme='dark'] {{ --bg: #0f1115; --bg2: #16181e; --fg: #e6e8ec; --fg2: #9aa1ad; --line: #262a33; --acc: #818cf8; --accbg: #1e1b4b; --code-bg: #020617; }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme='light']) {{ --bg: #0f1115; --bg2: #16181e; --fg: #e6e8ec; --fg2: #9aa1ad; --line: #262a33; --acc: #818cf8; --accbg: #1e1b4b; --code-bg: #020617; }} }}
 * {{ box-sizing: border-box; }}
 body {{ margin: 0; font-family: -apple-system, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--fg); line-height: 1.75; }}
 a {{ color: var(--acc); text-decoration: none; }} a:hover {{ text-decoration: underline; }}
@@ -274,7 +273,8 @@ td {{ padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: 
 tr:hover td {{ background: var(--bg2); }}
 td.desc {{ color: var(--fg2); font-size: 13px; max-width: 380px; }}
 .tag {{ display: inline-block; font-size: 11px; color: #b45309; background: #fef3c7; border-radius: 4px; padding: 0 6px; margin-left: 6px; }}
-@media (prefers-color-scheme: dark) {{ .tag {{ color: #fcd34d; background: #3b2f0b; }} }}
+:root[data-theme='dark'] .tag {{ color: #fcd34d; background: #3b2f0b; }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme='light']) .tag {{ color: #fcd34d; background: #3b2f0b; }} }}
 .note {{ background: var(--accbg); border-radius: 10px; padding: 12px 16px; font-size: 14px; color: var(--fg2); }}
 .proto li {{ margin: 6px 0; }}
 .faq li {{ margin: 12px 0; }}
