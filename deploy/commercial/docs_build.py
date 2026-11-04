@@ -145,24 +145,24 @@ export ANTHROPIC_MODEL=gpt-6-luna
 claude'''
 
 sections.append(('tools', '工具接入', f'''
-<p>大多数工具只需要填三项。在工具的「设置 → 模型服务 / 提供商」里新增自定义服务，协议选 <b>OpenAI 兼容（OpenAI Compatible）</b>：</p>
+<h3 id="tool-generic" style="margin-top:0">通用配置</h3>\n<p>大多数工具只需要填三项。在工具的「设置 → 模型服务 / 提供商」里新增自定义服务，协议选 <b>OpenAI 兼容（OpenAI Compatible）</b>：</p>
 {generic_tbl}
 <p>保存后新建对话，问一句"你好"，能收到回复就接好了。想换 GPT / GLM / DeepSeek，只在工具里切换模型名，<b>地址和 Key 不变</b>。</p>
 
-<h3>Cherry Studio</h3>
+<h3 id="tool-cherry">Cherry Studio</h3>
 <p>打开 <b>设置 → 模型服务 → 添加提供商</b>，选择 OpenAI 兼容，按上表填三项，保存后启用模型，在聊天窗口选择刚添加的模型即可。</p>
 
-<h3>VS Code（Cline / Roo Code 等）</h3>
+<h3 id="tool-vscode">VS Code（Cline / Roo Code 等）</h3>
 <p>提供商选 <b>OpenAI Compatible</b>，Base URL 填 <code>{BASE}/v1</code>，API Key 填自己的 Key，模型名填 <code>gpt-6-luna</code> 或 <code>glm-4.6</code>。如果插件会自动拼 <code>/v1</code>，把地址改成 <code>{BASE}</code>。</p>
 
-<h3>Claude Code</h3>
+<h3 id="tool-claude">Claude Code</h3>
 <p>Claude Code 用 <b>Anthropic 兼容协议</b>，与其他工具不同：<b>Base URL 不带 <code>/v1</code></b>。</p>
 {tabs_block([('环境变量（推荐）', claude_env), ('settings.json', claude_json)])}
 <p>用 CC Switch 管理多个供应商的用户：在 <b>CC Switch → Claude Code → 添加供应商</b> 选「自定义」（不是 Anthropic 官方），API URL 填 <code>{BASE}</code>，密钥填自己的 Key，并在高级设置里核对下面的模型映射——<b>只填地址和 Key、不配四个模型映射，会出现 <code>model_not_found</code></b>：</p>
 {cc_tbl}
 <p class="note">如果你曾在终端设置过 <code>ANTHROPIC_BASE_URL</code> 等环境变量，旧值可能覆盖新配置；修改后完全退出并重新打开工具。</p>
 
-<h3>Codex CLI</h3>
+<h3 id="tool-codex">Codex CLI</h3>
 <p>Base URL 填 <code>{BASE}/v1</code>，API Key 填自己的 Key，模型选 GPT 系列（复杂代码任务可从 <code>gpt-6.1-terra</code> 开始）。新版 Codex CLI 使用 <code>/v1/responses</code> 端点，如遇 <code>reasoning.context</code> 相关 400 报错，需要在配置中关闭 <code>use_responses_lite</code>——这不是 Key 无效，属于进阶配置，可参考 Codex 文档或联系我们协助。</p>
 '''))
 
@@ -207,6 +207,28 @@ sections.append(('faq', '常见问题', '''
 <li><b>数据安全？</b> 请求内容仅用于本次转发与计费统计，不用于训练。</li>
 </ul>
 '''))
+
+TOC_SUBS = {
+    'tools': [
+        ('tool-generic', '通用配置'),
+        ('tool-cherry', 'Cherry Studio'),
+        ('tool-vscode', 'VS Code 插件'),
+        ('tool-claude', 'Claude Code'),
+        ('tool-codex', 'Codex CLI'),
+    ],
+}
+
+def toc_html():
+    out = []
+    for sid, title, _ in sections:
+        subs = TOC_SUBS.get(sid, [])
+        if subs:
+            out.append(f'<div class="tocgroup"><a class="tocparent" href="#{sid}" onclick="tg(event,this)">{html.escape(title)}<span class="chev">›</span></a><div class="tocsub">')
+            out.extend(f'<a href="#{ssid}">{esc_h(st)}</a>' for ssid, st in subs)
+            out.append('</div></div>')
+        else:
+            out.append(f'<a href="#{sid}">{html.escape(title)}</a>')
+    return '\n'.join(out)
 
 # ---------------- page ----------------
 html_doc = f'''<!DOCTYPE html>
@@ -267,6 +289,12 @@ td.desc {{ color: var(--fg2); font-size: 13px; max-width: 380px; }}
 .copy {{ position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.12); color: #cbd5e1; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }}
 .copy:hover {{ background: rgba(255,255,255,.22); }}
 footer {{ text-align: center; color: var(--fg2); font-size: 13px; padding: 30px 0 50px; }}
+.tocgroup .tocparent {{ display: flex; justify-content: space-between; align-items: center; }}
+.chev {{ display: inline-block; transition: transform .2s; color: var(--fg2); font-size: 15px; }}
+.tocgroup.open .chev {{ transform: rotate(90deg); }}
+.tocsub {{ display: none; }}
+.tocgroup.open .tocsub {{ display: block; }}
+.tocsub a {{ padding-left: 38px !important; font-size: 13px !important; }}
 @media (max-width: 900px) {{ .layout {{ display: block; }} nav.toc {{ display: none; }} main {{ padding: 24px; }} }}
 </style>
 </head>
@@ -278,7 +306,7 @@ footer {{ text-align: center; color: var(--fg2); font-size: 13px; padding: 30px 
 </div></header>
 <div class="layout">
 <nav class="toc" id="toc">
-{chr(10).join(f'<a href="#{sid}">{html.escape(title)}</a>' for sid, title, _ in sections)}
+{toc_html()}
 </nav>
 <main>
 {chr(10).join(f'<section id="{sid}"><h2>{html.escape(title)}</h2>{body}</section>' for sid, title, body in sections)}
@@ -290,6 +318,7 @@ function cp(btn) {{
   const code = btn.parentElement.querySelector('code').innerText;
   navigator.clipboard.writeText(code).then(() => {{ btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制', 1500); }});
 }}
+function tg(e, el) {{ el.parentElement.classList.toggle('open'); }}
 document.querySelectorAll('.tabbar').forEach(bar => {{
   bar.addEventListener('click', e => {{
     if (e.target.tagName !== 'BUTTON') return;
@@ -308,6 +337,22 @@ const obs = new IntersectionObserver(entries => {{
   }});
 }}, {{ rootMargin: '-30% 0px -60% 0px' }});
 document.querySelectorAll('main section').forEach(s => obs.observe(s));
+document.querySelectorAll('.tocgroup').forEach(g => {{
+  const subLinks = g.querySelectorAll('.tocsub a');
+  if (!subLinks.length) return;
+  const subObs = new IntersectionObserver(entries => {{
+    entries.forEach(en => {{
+      if (en.isIntersecting) {{
+        subLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + en.target.id));
+        g.classList.add('open');
+      }}
+    }});
+  }}, {{ rootMargin: '-25% 0px -70% 0px' }});
+  subLinks.forEach(l => {{
+    const t = document.querySelector(l.getAttribute('href'));
+    if (t) subObs.observe(t);
+  }});
+}});
 </script>
 </body>
 </html>'''
