@@ -19,6 +19,7 @@ services:
       - REDIS_CONN_STRING=redis://redis
       - SESSION_SECRET=${SESSION_SECRET:?set in .env}
       - SESSION_COOKIE_SECURE=true
+      - SESSION_COOKIE_TRUSTED_URL=${SESSION_COOKIE_TRUSTED_URL:-}
       - TZ=Asia/Shanghai
       - GLOBAL_API_RATE_LIMIT=360
       - GLOBAL_API_RATE_LIMIT_DURATION=180
@@ -61,6 +62,8 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: newapi-commercial-caddy
+    environment:
+      - COMMERCIAL_DOMAIN=${COMMERCIAL_DOMAIN:?set in .env}
     restart: always
     ports:
       - "80:80"
