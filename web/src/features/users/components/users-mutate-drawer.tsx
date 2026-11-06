@@ -175,7 +175,7 @@ export function UsersMutateDrawer({
       if (!accountPasswordSchema.safeParse(data.password ?? '').success) {
         form.setError('password', {
           type: 'manual',
-          message: t('Password must contain between 8 and 128 characters.'),
+          message: t('Password must contain between 6 and 128 characters.'),
         })
         return
       }
@@ -400,7 +400,7 @@ export function UsersMutateDrawer({
                           placeholder={
                             isUpdate
                               ? t('Leave empty to keep unchanged')
-                              : t('Enter password (8–128 characters)')
+                              : t('Enter password (6–128 characters)')
                           }
                         />
                       </FormControl>

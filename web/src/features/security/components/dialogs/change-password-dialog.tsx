@@ -219,7 +219,7 @@ export function ChangePasswordDialog(props: ChangePasswordDialogProps) {
                     />
                   </FormControl>
                   <p className='text-muted-foreground text-xs'>
-                    {t('Use 8–128 characters.')}
+                    {t('Use 6–128 characters.')}
                   </p>
                   <FormMessage />
                 </FormItem>
