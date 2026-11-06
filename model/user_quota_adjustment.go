@@ -59,7 +59,13 @@ func AdjustUserQuota(userID, operatorRole int, mode string, value int) (*UserQuo
 		// An unchanged override is a successful operation, including on MySQL
 		// configurations that count only changed rows in RowsAffected.
 		if after != user.Quota {
-			result := tx.Model(&User{}).Where("id = ?", userID).Update("quota", after)
+			// Stamp the monthly reset month together with a manual balance
+			// change: an unstamped user would have this grant replaced by the
+			// monthly allowance on the next quota read (MaybeResetMonthlyQuota).
+			result := tx.Model(&User{}).Where("id = ?", userID).Updates(map[string]any{
+				"quota":             after,
+				"quota_reset_month": MonthlyQuotaResetStamp(),
+			})
 			if result.Error != nil {
 				return result.Error
 			}

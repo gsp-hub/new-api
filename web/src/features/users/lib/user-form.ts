@@ -23,7 +23,7 @@ import {
   type AdminPermissionMatrix,
   normalizeAdminPermissions,
 } from '@/lib/admin-permissions'
-import { quotaUnitsToDollars } from '@/lib/format'
+import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 import { ROLE } from '@/lib/roles'
 
 import { DEFAULT_GROUP } from '../constants'
@@ -39,6 +39,7 @@ export const userFormSchema = z.object({
   password: z.string().optional(),
   role: z.number().optional(),
   quota_dollars: z.number().min(0).optional(),
+  monthly_quota_dollars: z.number().min(0).optional(),
   group: z.string().optional(),
   remark: z.string().optional(),
   admin_permissions: z
@@ -58,6 +59,7 @@ export const USER_FORM_DEFAULT_VALUES: UserFormValues = {
   password: '',
   role: 1, // Default to common user
   quota_dollars: 0,
+  monthly_quota_dollars: 500,
   group: DEFAULT_GROUP,
   remark: '',
   // Filled against the backend catalog at render time; see UsersMutateDrawer.
@@ -94,6 +96,14 @@ export function transformFormDataToPayload(
     )
   }
 
+  // Monthly allowance applies to both create and update.
+  if (
+    data.monthly_quota_dollars !== undefined &&
+    data.monthly_quota_dollars > 0
+  ) {
+    payload.monthly_quota = parseQuotaFromDollars(data.monthly_quota_dollars)
+  }
+
   // For create: only send required fields
   if (userId === undefined) {
     payload.role = role
@@ -119,6 +129,7 @@ export function transformUserToFormDefaults(user: User): UserFormValues {
     password: '',
     role: user.role,
     quota_dollars: quotaUnitsToDollars(user.quota),
+    monthly_quota_dollars: quotaUnitsToDollars(user.monthly_quota ?? 250000000),
     group: user.group || DEFAULT_GROUP,
     remark: user.remark || '',
     admin_permissions: user.admin_permissions ?? {},

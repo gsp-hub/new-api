@@ -166,6 +166,9 @@ func setupLoginAtAuthVersion(user *model.User, expectedAuthVersion int64, c *gin
 		common.ApiErrorT(c, "User has been banned")
 		return
 	}
+	// Lazy monthly reset before building the login response so the console
+	// always shows the new-month allowance right after a month rollover.
+	model.MaybeResetMonthlyQuota(user.Id)
 	currentUser, err := model.GetSelfUserById(user.Id)
 	if err != nil {
 		common.ApiError(c, err)

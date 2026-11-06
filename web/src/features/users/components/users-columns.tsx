@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { getCurrencyDisplay } from '@/lib/currency'
-import { formatQuota } from '@/lib/format'
+import { formatQuota , quotaUnitsToDollars } from '@/lib/format'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
 import {
@@ -193,6 +193,17 @@ export function useUsersColumns(): ColumnDef<User>[] {
         size: 180,
         minSize: 160,
         meta: { mobileOrder: 40 },
+      },
+      {
+        id: 'monthly_quota',
+        accessorKey: 'monthly_quota',
+        header: `${t('Monthly Quota')} (${quotaUnit})`,
+        cell: ({ row }) => {
+          const user = row.original
+          const dollars = quotaUnitsToDollars(user.monthly_quota ?? 250000000)
+          return <span>{dollars.toFixed(0)}</span>
+        },
+        size: 110,
       },
       {
         accessorKey: 'group',

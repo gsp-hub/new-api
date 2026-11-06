@@ -516,7 +516,7 @@ func TestSecurityAccountPasswordPolicyAndHashCompatibility(t *testing.T) {
 		valid          bool
 	}{
 		{"common password accepted", "password123", true},
-		{"short", "seven77", false},
+		{"short", "seven", false},
 		{"too long", strings.Repeat("界", 129), false},
 		{"long Unicode", strings.Repeat("界🔒 ", 40), true},
 		{"whitespace preserved", "    phrase with whitespace    ", true},

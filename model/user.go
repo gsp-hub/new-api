@@ -1,6 +1,7 @@
 package model
 
 import (
+	"time"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -96,6 +97,8 @@ type User struct {
 	AccessTokenCreatedAt *int64                     `json:"-" gorm:"type:bigint;column:access_token_created_at"`    // Deprecated: 旧版面板访问令牌，仅在升级后的过渡期内使用；删除 users.access_token 列时一并移除。
 	Quota                int                        `json:"quota" gorm:"type:int;default:0"`
 	UsedQuota            int                        `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
+	MonthlyQuota         int                        `json:"monthly_quota" gorm:"type:bigint;default:250000000;column:monthly_quota"`      // 月度额度：每月首次读取时重置 quota 到该值（root 不参与）
+	QuotaResetMonth     string                     `json:"quota_reset_month" gorm:"type:varchar(7);default:'';column:quota_reset_month"` // 上次已重置的月份 YYYY-MM
 	RequestCount         int                        `json:"request_count" gorm:"type:int;default:0;"`               // request number
 	Group                string                     `json:"group" gorm:"type:varchar(64);default:'default'"`
 	AffCode              string                     `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
@@ -535,7 +538,7 @@ func GetSelfUserById(id int) (*User, error) {
 		"github_id", "discord_id", "oidc_id", "wechat_id", "telegram_id",
 		"group", "quota", "used_quota", "request_count", "aff_code", "aff_count",
 		"aff_quota", "aff_history", "inviter_id", "linux_do_id", "setting",
-		"stripe_customer", "auth_version", "must_change_password",
+		"stripe_customer", "auth_version", "must_change_password", "monthly_quota",
 		"CASE WHEN password <> '' THEN 1 ELSE 0 END AS has_password",
 	}).First(&profile, "id = ?", id).Error
 	profile.User.HasPassword = profile.HasPassword
@@ -884,6 +887,9 @@ func (user *User) EditWithTx(tx *gorm.DB, updatePassword bool) error {
 		"display_name": newUser.DisplayName,
 		"group":        newUser.Group,
 		"remark":       newUser.Remark,
+	}
+	if newUser.MonthlyQuota > 0 {
+		updates["monthly_quota"] = newUser.MonthlyQuota
 	}
 	if updatePassword {
 		updates["password"] = newUser.Password
@@ -1253,14 +1259,64 @@ func ValidateAccessToken(token string) (*User, error) {
 // GetUserQuota gets quota from Redis first, falls back to DB if needed
 func GetUserQuota(id int, fromDB bool) (quota int, err error) {
 	if !fromDB && common.RedisEnabled {
+		// Redis cache hits skip the monthly reset check; the check also runs on
+		// login and cache misses, so a stale cache only delays the reset.
 		return getUserQuotaCache(id)
 	}
+	MaybeResetMonthlyQuota(id)
 	err = DB.Model(&User{}).Where("id = ?", id).Select("quota").Find(&quota).Error
 	if err != nil {
 		return 0, err
 	}
 
 	return quota, nil
+}
+
+// DefaultMonthlyQuota is the default monthly allowance in quota units when a
+// user has no explicit monthly_quota set (500 USD at QuotaPerUnit=500000).
+const DefaultMonthlyQuota = 250000000
+
+// MonthlyQuotaResetStamp returns the calendar-month stamp used to decide
+// whether a user quota reset is due.
+func MonthlyQuotaResetStamp() string {
+	return time.Now().Format("2006-01")
+}
+
+// MaybeResetMonthlyQuota lazily resets a user quota at the first read of a new
+// calendar month. Idempotent and concurrency-safe: the UPDATE only matches rows
+// whose stored stamp is still stale, so racing readers reset at most once per
+// month. Root never resets. monthly_quota <= 0 falls back to the default tier.
+func MaybeResetMonthlyQuota(id int) {
+	if id == 0 {
+		return
+	}
+	DB.Model(&User{}).
+		Where("id = ? AND username <> 'root' AND quota_reset_month <> ?", id, MonthlyQuotaResetStamp()).
+		Updates(map[string]any{
+			"quota":             gorm.Expr("CASE WHEN monthly_quota > 0 THEN monthly_quota ELSE ? END", DefaultMonthlyQuota),
+			"quota_reset_month": MonthlyQuotaResetStamp(),
+		})
+}
+
+// InitializeMonthlyQuota normalizes the monthly-quota columns after AutoMigrate.
+// monthly_quota backfills via its column default; only the reset stamp needs
+// seeding. Stamping the CURRENT month on first boot after the upgrade prevents
+// a fleet-wide reset mid-month (the retired launchd script already performed
+// this month's reset).
+func InitializeMonthlyQuota() error {
+	return DB.Model(&User{}).
+		Where("quota_reset_month IS NULL OR quota_reset_month = ''").
+		Updates(map[string]any{"quota_reset_month": MonthlyQuotaResetStamp()}).Error
+}
+
+// BeforeCreate only normalizes the monthly allowance. New users keep quota 0
+// and an empty reset stamp: the first quota read (MaybeResetMonthlyQuota)
+// grants the first month, and an empty stamp never blocks an admin grant.
+func (user *User) BeforeCreate(tx *gorm.DB) error {
+	if user.MonthlyQuota <= 0 {
+		user.MonthlyQuota = DefaultMonthlyQuota
+	}
+	return nil
 }
 
 func GetUserUsedQuota(id int) (quota int, err error) {
